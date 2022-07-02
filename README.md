@@ -12,7 +12,11 @@ We are very proud to have received a grant from the Starkware!
   <img width="200" src="assets/StarkNet_logo.png" />
 </p>
 
-Current centralised trading workflows are: 
+Please give us a GitHub Star Above if you like this project. We are actively looking for contributors so please reach out to us if you are interested.
+
+Current commercial relationships use archaic methods to interact. PDFs, digital signature, emails and bank transfers plague the workflows currently used by people when engaging commercially. The lack of structure is a culprit for countless operational errors, uncertainty and high costs. TradeFlows aims to solve by offering a platform that allows people to build structure and certainty to workflows in all industrys. 
+
+Furthermore, current / centralised commercial workflows are: 
 - Uncertain
 - Opaque
 - Slow; and 
@@ -186,4 +190,9 @@ Then run the next test to ensure that recreating trades and rerunning these oper
 
     npx hardhat test test/again.ts
 
-### Check Balances
+# Notes
+⚠️ WARNING! ⚠️
+This repo contains highly experimental code. Expect rapid iteration. Use at your own risk.
+
+We are actively looking for contributors so please reach out if you are interested.
+
