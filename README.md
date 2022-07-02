@@ -7,7 +7,7 @@
 [TradeFlows](http://www.tradeflows.io) is a decentralised Commerce Protocol on [StarkNet](https://starkware.co/starknet/). Our goal is to provide a set of on-chain tools that allow our community to to build the best commercial experiences between each other in a transparent, permissionless and trustless manner. 
 
 <p align="center">
-  <img width="200" src="assets/starknet_logo.png" />
+  <img width="200" src="assets/StarkNet_logo.png" />
 </p>
 
 
