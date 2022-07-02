@@ -48,16 +48,15 @@ and a set of ERC20 wrapper contracts that enable all custom streaming and escrow
 
 
 # Commercial Workflow
-When starting on a commercial journey, both buyers and sellers
+When starting on a commercial journey, both buyers and sellers engage through the Smart Contract infrastructure in an on-chain dynamic.
 ## Minting a Trade
-Steps when creating a new trade:
+The first steps are creating a new trade:
 
-Add money to wallet
-1. Buyer and Seller trade ERC20 token (USDC) to their respective Flow tokens.
-2. Seller approves a transfer for each Flow token the trade is linked to for the Trade contract to charge the respective fees
+1. First both Buyer and Seller deposit ERC20 token (USDC) to the Flow tokens in order to make payments. The Seller pays minting fees and the Buyer pays the commercial fees in flow token.
+2. Seller approves a transfer for each Flow token the trade is linked to for the Trade contract to charge the respective fees.
 3. Seller mints a Trade NFT (_txTrade.init_) returning a tokenID.
 4. Seller communicates the tokenID to the Buyer.
-5. Buyer agrees to the trade (_txTrade.agree_) given the tokenID
+5. Buyer agrees to the trade (_txTrade.agree_) given the tokenID.
 6. Buyer and Seller can now start to rate each other (_txTrade.rate_) given the tokenId.
 7. Buyer starts adding programmed Flow token cashflows to the trade (_txFlow.addNFTMaturityStream_) given the tokenId.
 8. Service provider is now able to withdraw Flow tokens from the NFT Trade (_txFlow.withdrawAmountNFT_) that are streamed to them as time passes.
