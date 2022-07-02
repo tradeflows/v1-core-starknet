@@ -90,15 +90,6 @@ describe("Start Workflow", function () {
     
   })
 
-  it("Add", async function() {   
-    const data = await account0.call(txTradeContract, "addTest")
-
-    console.log('n0', fromUint256WithFelts(data.n0).toString())
-    console.log('n1', fromUint256WithFelts(data.n1).toString())
-    console.log('n2', fromUint256WithFelts(data.n2).toString())
-    console.log('n3', fromUint256WithFelts(data.n3).toString())
-  })
-
   it("states", async function() {   
     const {block_number: block, block_timestamp: time} = await account0.call(txFlowContract, "state")
 

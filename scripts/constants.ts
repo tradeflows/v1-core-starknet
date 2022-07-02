@@ -5,20 +5,20 @@ export const TIMEOUT = 900_000;
 export const FEE = BigInt('0'.replace(/,/g, ''))
 export const ETH_WEI = 10n ** 18n
 
-export const walletAddressOwner         = '0x70b317ecb7c393f057af8c1daed6f02f96e0ec71ca79dd27001ab60e2590e47'
-export const walletPrivateOwner         = '0x2f51210f2e8221fc278e8c2b86008004'
+export const walletAddressOwner         = '0x5d1120755d9d5380201a8ac8bf39f7c4e2dd886a5b1431b7ea8dfb4ea3f0624'
+export const walletPrivateOwner         = '0xfa9ccf36421a514a2b8bcd75e06b884b'
 
-export const walletAddress0             = '0x5be62b576a3d16f7d39f4be478320d4bf77a93adb83f63058c19fa2f2b30480'
-export const walletPrivate0             = '0xa0f368a4e96983675b6547b44aba592'
+export const walletAddress0             = '0x7b85aa6f0bcb77bc76efafd22dfbb36055bd4915fd77d7d357fd7d3b366d9da'
+export const walletPrivate0             = '0x3f195a2cc7e18acfea7b737abbac88f2'
 
-export const walletAddress1             = '0x226cc16253937ee31bd6edb48281127f28aba161788d4508d65a5f389f3d86f'
-export const walletPrivate1             = '0x1f7827cd961cb802ac822c73d8870880'
+export const walletAddress1             = '0x10b0a921fe94090bba9d65478edb9a2fe17857bf719574a58b39cbe22d92e7c'
+export const walletPrivate1             = '0xebd2156a6161176df1dc826d487b58c1'
 
-export const daoContractAddress         = '0x02655912694ee0ebf2129af6bb7da3cb481644c62835f9320f18183637f90a63'
-export const erc20ContractAddress       = '0x03f58b65d9737baa93b2a145a4034b5f3e83c39d5e9a5385ff1414b6926625da'
-export const txFlowContractAddress      = '0x050c2c6f87ecc14aca6c4ceb7042de6b07721fd5f19a00ea09574a1933df1927'
-export const txDharmaContractAddress    = '0x00195bc162ab61194ed5a0417bd8680e685c0834b84f21c5fd4df434e20c00fb'
-export const txTradeContractAddress     = '0x0784ae24117ef470160dedbb50143e0f0c9685096ba403606040f621dc183b75'
+export const daoContractAddress         = '0x03e122ff021fd9bf8952e55746ad095b751528ffcd5d40a4acc379a1d4431c25'
+export const erc20ContractAddress       = '0x02d704491ed20caa95afa45184b7e9c5ecf13e1a079fdbb5b95ea39ca592cf29'
+export const txFlowContractAddress      = '0x0746fffd49369c4bd3f5c970ff9885e0d4d3e6b6c43f2a15efea034dc61735a0'
+export const txDharmaContractAddress    = '0x030260d11b2cd88a410572b3011357857c9fcef9bd431d38c8dc0c47c7fdc835'
+export const txTradeContractAddress     = '0x05df41f469bf98be75e479385eee571ebedb72f70178fe00f17040f872c0b398'
 
 /** GOERLI **/
 // export const FEE = BigInt('38866350207288'.replace(/,/g, ''))

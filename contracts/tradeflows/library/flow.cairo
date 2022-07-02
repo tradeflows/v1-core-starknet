@@ -12,20 +12,6 @@ from starkware.cairo.common.uint256 import (
     uint256_le,
     uint256_check
 )
-
-from openzeppelin.token.erc20.library import (
-    ERC20_allowances,
-    ERC20_balances,
-
-    ERC20
-)
-
-from openzeppelin.token.erc721.interfaces.IERC721 import IERC721
-from openzeppelin.token.erc20.interfaces.IERC20 import IERC20
-
-
-from openzeppelin.access.ownable import Ownable
-
 from starkware.starknet.common.syscalls import (
     get_caller_address,
     get_contract_address, 
@@ -40,10 +26,14 @@ from starkware.cairo.common.math import (
     assert_not_equal
 )
 from starkware.cairo.common.alloc import alloc
+
+from openzeppelin.token.erc20.library import ERC20_allowances, ERC20_balances,ERC20
+from openzeppelin.token.erc721.interfaces.IERC721 import IERC721
+from openzeppelin.token.erc20.interfaces.IERC20 import IERC20
 from openzeppelin.security.safemath import SafeUint256
+from openzeppelin.access.ownable import Ownable
 
 from tradeflows.interfaces.ItxTrade import ItxTrade
-
 
 # Maturity Stream 
 struct MaturityStreamStructure:
@@ -61,14 +51,17 @@ struct MaturityStreamStructure:
     member is_paused        : felt
 end
 
+# Event that an interim withdraw has occurred
 @event
 func withdraw_called(payer: felt, amount: Uint256, locked_amount: Uint256, total_withdraw: Uint256, start_time: felt, maturity_time: felt, block_time: felt):
 end
 
+# Event that an aggregated withdraw has occurred
 @event
 func withdraw_total_called(payer: felt, amount: Uint256, locked_amount: Uint256, block_time: felt):
 end
 
+# Event that a maturity stream has been added
 @event
 func add_maturity_stream_called(flow_id: felt, payer: felt, target_amount: Uint256, initial_amount: Uint256, count: felt, start_time: felt, last_reset_time: felt, maturity_time: felt):
 end
@@ -103,6 +96,7 @@ end
 func FLOW_out_tokenId(payer: felt, idx: felt) -> (tokenId: Uint256):
 end
 
+# Storage of the base token address
 @storage_var
 func FLOW_base_token() -> (token_address: felt):
 end
@@ -237,6 +231,19 @@ namespace Flow:
 
         alloc_locals
 
+        with_attr error_message("beneficiary_tokenId is not a valid Uint256"):
+            uint256_check(beneficiary_tokenId)
+        end
+
+        with_attr error_message("target_amount is not a valid Uint256"):
+            uint256_check(target_amount)
+        end
+
+        with_attr error_message("initial_amount is not a valid Uint256"):
+            uint256_check(initial_amount)
+        end
+        
+
         let uint256_0 = Uint256(0,0)
 
         let (block_timestamp)   = get_block_timestamp()
@@ -311,6 +318,14 @@ namespace Flow:
 
         alloc_locals
 
+        with_attr error_message("beneficiary_tokenId is not a valid Uint256"):
+            uint256_check(beneficiary_tokenId)
+        end
+
+        with_attr error_message("amount is not a valid Uint256"):
+            uint256_check(amount)
+        end
+
         let uint256_0 = Uint256(0,0)
 
         let (block_timestamp)   = get_block_timestamp()
@@ -351,6 +366,13 @@ namespace Flow:
 
         alloc_locals
 
+        with_attr error_message("beneficiary_tokenId is not a valid Uint256"):
+            uint256_check(beneficiary_tokenId)
+        end
+        with_attr error_message("amount is not a valid Uint256"):
+            uint256_check(amount)
+        end
+
         let uint256_0 = Uint256(0,0)
 
         let (block_timestamp)   = get_block_timestamp()
@@ -386,6 +408,10 @@ namespace Flow:
         ) -> (
             count: felt
         ):
+
+        with_attr error_message("beneficiary_tokenId is not a valid Uint256"):
+            uint256_check(beneficiary_tokenId)
+        end
 
         let (count)             = FLOW_in_count.read(beneficiary=beneficiary_address, tokenId=beneficiary_tokenId)
         
@@ -426,6 +452,10 @@ namespace Flow:
             last_reset_time: felt, 
             maturity_time: felt
         ):
+
+        with_attr error_message("beneficiary_tokenId is not a valid Uint256"):
+            uint256_check(beneficiary_tokenId)
+        end
         
         let (stream) = FLOW_in.read(beneficiary=beneficiary_address, tokenId=beneficiary_tokenId, idx=idx)
 
@@ -450,12 +480,17 @@ namespace Flow:
             last_reset_time: felt, 
             maturity_time: felt
         ):
+
+        with_attr error_message("beneficiary_tokenId is not a valid Uint256"):
+            uint256_check(beneficiary_tokenId)
+        end
         
         let (stream) = FLOW_in.read(beneficiary=beneficiary_address, tokenId=beneficiary_tokenId, idx=idx)
 
         return (payer=stream.payer, amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time)
     end
 
+    # calculate the amount available and locked
     func calc_stream{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
@@ -514,6 +549,10 @@ namespace Flow:
 
         alloc_locals
 
+        with_attr error_message("beneficiary_tokenId is not a valid Uint256"):
+            uint256_check(beneficiary_tokenId)
+        end
+
         let uint256_0 = Uint256(0,0)
 
         if idx == -1:
@@ -558,6 +597,11 @@ namespace Flow:
         ):
 
         alloc_locals
+
+        with_attr error_message("beneficiary_tokenId is not a valid Uint256"):
+            uint256_check(beneficiary_tokenId)
+        end
+
         let (block_timestamp)                   = get_block_timestamp()
         let (count)                             = FLOW_in_count.read(beneficiary=beneficiary_address, tokenId=beneficiary_tokenId)
 
@@ -650,6 +694,10 @@ namespace Flow:
         ):
 
         alloc_locals
+
+        with_attr error_message("beneficiary_tokenId is not a valid Uint256"):
+            uint256_check(beneficiary_tokenId)
+        end
 
         let uint256_0 = Uint256(0,0)
 
@@ -748,6 +796,10 @@ namespace Flow:
         ):
         
         alloc_locals
+
+        with_attr error_message("beneficiary_tokenId is not a valid Uint256"):
+            uint256_check(beneficiary_tokenId)
+        end
 
         let (contract_address)                       = get_contract_address()
         let (block_timestamp)                        = get_block_timestamp()

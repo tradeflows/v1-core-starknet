@@ -49,65 +49,79 @@ from tradeflows.interfaces.ItxDharma import ItxDharma
 # Trade functionality
 #
 
+# Event a trade has been initiated
 @event
 func init_called(tokenId: Uint256, owner: felt, counterpart: felt):
 end
 
+# Storage of the state of the agreement (agreed = 1 / not agreed = 0)
 @storage_var
 func agreements_state(tokenId: Uint256) -> (state: felt):
 end
 
+# Storage of the agreement counterpart address
 @storage_var
 func agreements_counterpart(tokenId: Uint256) -> (counterpart: felt):
 end
 
+# Storage of the agreement provider address
 @storage_var
 func agreements_provider(tokenId: Uint256) -> (provider: felt):
 end
 
+# Storage of the timestamp of when the agreement was agreed
 @storage_var
 func agreements_timestamp(tokenId: Uint256) -> (timestamp: felt):
 end
 
+# Storage of the number of NFTs minted which is used as a counter
 @storage_var
 func id_counter() -> (counter: Uint256):
 end
 
+# Storage of the address of the Dharma contract
 @storage_var
 func txDharma_address() -> (address: felt):
 end
 
+# Storage of the address of the DAO contract
 @storage_var
 func dao_address() -> (address: felt):
 end
 
-
+# Storage of the terms (array) of an agreement
 @storage_var
 func agreements_terms(tokenId : Uint256, index : felt) -> (res : felt):
 end
 
+# Storage of the length of the terms array of an agreement 
 @storage_var
 func agreements_terms_len(tokenId : Uint256) -> (res : felt):
 end
 
+# Storage fees per token / currency
 @storage_var
 func TRADE_fees(address: felt) -> (fee: Uint256):
 end
 
+# Storage of the state of fees being paid for a specific trade
 @storage_var
 func TRADE_paid_fees(tokenId: Uint256, address: felt) -> (success: felt):
 end
 
+# Storage of the counter of the number of trades per address
 @storage_var
 func TRADE_trade_count(address: felt) -> (count: felt):
 end
 
+# Storage of the tokenId given an address and an index
 @storage_var
 func TRADE_trade_idx(address: felt, idx: felt) -> (tokenId: Uint256):
 end
 
 namespace Trade:
 
+    # init a trade
     func init{
             pedersen_ptr: HashBuiltin*, 
             syscall_ptr: felt*, 
@@ -138,6 +152,7 @@ namespace Trade:
         return (tokenId=tokenId)
     end
 
+    # init agree to a trade
     func agree{
             pedersen_ptr: HashBuiltin*, 
             syscall_ptr: felt*, 
@@ -145,6 +160,11 @@ namespace Trade:
         }(
             tokenId: Uint256
         ):
+
+        # ensure valid uint256
+        with_attr error_message("tokenId is not a valid Uint256"):
+            uint256_check(tokenId)
+        end
 
         let (counterpart)       = agreements_counterpart.read(tokenId)
         let (caller_address)    = get_caller_address()
@@ -167,6 +187,7 @@ namespace Trade:
         return ()
     end
 
+    # check if trade has been agreed
     func isAgreed{
             pedersen_ptr: HashBuiltin*, 
             syscall_ptr: felt*, 
@@ -178,6 +199,11 @@ namespace Trade:
             timestamp: felt,
             counterpart_address: felt
         ):
+
+        # ensure valid uint256
+        with_attr error_message("tokenId is not a valid Uint256"):
+            uint256_check(tokenId)
+        end
         
         let (agreed) = agreements_state.read(tokenId)
         let (timestamp) = agreements_timestamp.read(tokenId)
@@ -186,6 +212,7 @@ namespace Trade:
         return (agreed=agreed, timestamp=timestamp, counterpart_address=counterpart)
     end
 
+    # set Dharma address
     func setTxDharma{
             pedersen_ptr: HashBuiltin*, 
             syscall_ptr: felt*, 
@@ -198,6 +225,7 @@ namespace Trade:
         return()
     end
 
+    # get Dharma address
     func getTxDharma{
             pedersen_ptr: HashBuiltin*, 
             syscall_ptr: felt*, 
@@ -211,6 +239,7 @@ namespace Trade:
         return(address=address)
     end
 
+    # set DAO address
     func setDAO{
             pedersen_ptr: HashBuiltin*, 
             syscall_ptr: felt*, 
@@ -223,6 +252,7 @@ namespace Trade:
         return()
     end
 
+    # get DAO address
     func getDAO{
             pedersen_ptr: HashBuiltin*, 
             syscall_ptr: felt*, 
@@ -236,6 +266,7 @@ namespace Trade:
         return(address=address)
     end
 
+    # rate a given address and trade (tokenId)
     func rate{
             pedersen_ptr: HashBuiltin*, 
             syscall_ptr: felt*, 
@@ -247,6 +278,14 @@ namespace Trade:
         ():
 
         alloc_locals
+
+        # ensure valid uint256
+        with_attr error_message("tokenId is not a valid Uint256"):
+            uint256_check(tokenId)
+        end
+        with_attr error_message("amount is not a valid Uint256"):
+            uint256_check(amount)
+        end
 
         let(state) = agreements_state.read(tokenId)
 
@@ -289,12 +328,13 @@ namespace Trade:
         return ()
     end
 
+    # get agreement terms
     func agreement_terms{
             syscall_ptr : felt*, 
             pedersen_ptr : HashBuiltin*, 
             range_check_ptr
         }(
-            token_id : Uint256
+            tokenId : Uint256
         ) -> (
             agreement_terms_len : felt, 
             agreement_terms : felt*
@@ -302,26 +342,26 @@ namespace Trade:
         alloc_locals
 
         # ensure valid uint256
-        with_attr error_message("token_id is not a valid Uint256"):
-            uint256_check(token_id)
+        with_attr error_message("tokenId is not a valid Uint256"):
+            uint256_check(tokenId)
         end
 
         # ensure token with token_id exists
-        let (exists) = ERC721._exists(token_id)
+        let (exists) = ERC721._exists(tokenId)
         with_attr error_message("nonexistent token"):
             assert exists = TRUE
         end
 
-        let (local agreement_terms_len) = agreements_terms_len.read(token_id)
+        let (local agreement_terms_len) = agreements_terms_len.read(tokenId)
 
         let (local agreement_terms_value) = alloc()
 
-        _agreement_terms(token_id, agreement_terms_len, agreement_terms_value)
+        _agreement_terms(tokenId, agreement_terms_len, agreement_terms_value)
 
         return (agreement_terms_len, agreement_terms_value)
     end
 
-
+    # set agreement terms
     func set_agreement_terms{
             syscall_ptr : felt*, 
             pedersen_ptr : HashBuiltin*, 
@@ -343,6 +383,7 @@ namespace Trade:
         return ()
     end
 
+    # reset agreement terms
     func reset_agreements_terms{
             syscall_ptr : felt*, 
             pedersen_ptr : HashBuiltin*, 
@@ -351,10 +392,15 @@ namespace Trade:
             tokenId : Uint256
         ):
 
+        with_attr error_message("tokenId is not a valid Uint256"):
+            uint256_check(tokenId)
+        end
+
         set_agreement_terms(tokenId, 0, &[0])
         return ()
     end
 
+    # helper: get agreement terms
     func _agreement_terms{
             syscall_ptr : felt*, 
             pedersen_ptr : HashBuiltin*, 
@@ -375,6 +421,7 @@ namespace Trade:
         return ()
     end
 
+    # helper: set agreement terms
     func _set_terms{
             syscall_ptr : felt*, 
             pedersen_ptr : HashBuiltin*, 
@@ -394,6 +441,7 @@ namespace Trade:
         return ()
     end
 
+    # charge fees
     func charge_fee{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
@@ -404,6 +452,10 @@ namespace Trade:
             tokens: felt*,
         ) -> ():
         alloc_locals
+
+        with_attr error_message("tokenId is not a valid Uint256"):
+            uint256_check(tokenId)
+        end
 
         if tokens_len == 0:
             return ()

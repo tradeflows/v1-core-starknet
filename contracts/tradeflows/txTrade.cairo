@@ -4,25 +4,19 @@
 
 %lang starknet
 
+from starkware.starknet.common.syscalls import get_caller_address, get_contract_address
 from starkware.cairo.common.cairo_builtins import HashBuiltin
-from starkware.cairo.common.bool import TRUE
 from starkware.cairo.common.uint256 import Uint256
-
-from openzeppelin.token.erc721.library import ERC721
+from starkware.cairo.common.bool import TRUE
 
 from openzeppelin.token.erc721_enumerable.library import ERC721_Enumerable
-
-from openzeppelin.introspection.ERC165 import ERC165
-
-from openzeppelin.access.ownable import Ownable
-from tradeflows.library.trade import Trade, TRADE_trade_count, TRADE_trade_idx, TRADE_fees, TRADE_paid_fees
-
-from starkware.starknet.common.syscalls import (
-    get_caller_address,
-    get_contract_address
-)
-
+from openzeppelin.security.reentrancyguard import ReentrancyGuard
 from openzeppelin.security.safemath import SafeUint256
+from openzeppelin.token.erc721.library import ERC721
+from openzeppelin.introspection.ERC165 import ERC165
+from openzeppelin.access.ownable import Ownable
+
+from tradeflows.library.trade import Trade, TRADE_trade_count, TRADE_trade_idx, TRADE_fees, TRADE_paid_fees
 
 #
 # Constructor
@@ -173,7 +167,9 @@ func approve{
         syscall_ptr: felt*, 
         range_check_ptr
     }(to: felt, tokenId: Uint256):
+    ReentrancyGuard._start()
     ERC721.approve(to, tokenId)
+    ReentrancyGuard._end()
     return ()
 end
 
@@ -183,7 +179,9 @@ func setApprovalForAll{
         pedersen_ptr: HashBuiltin*, 
         range_check_ptr
     }(operator: felt, approved: felt):
+    ReentrancyGuard._start()
     ERC721.set_approval_for_all(operator, approved)
+    ReentrancyGuard._end()
     return ()
 end
 
@@ -197,7 +195,9 @@ func transferFrom{
         to: felt, 
         tokenId: Uint256
     ):
+    ReentrancyGuard._start()
     ERC721_Enumerable.transfer_from(from_, to, tokenId)
+    ReentrancyGuard._end()
     return ()
 end
 
@@ -213,7 +213,9 @@ func safeTransferFrom{
         data_len: felt,
         data: felt*
     ):
+    ReentrancyGuard._start()
     ERC721_Enumerable.safe_transfer_from(from_, to, tokenId, data_len, data)
+    ReentrancyGuard._end()
     return ()
 end
 
@@ -223,8 +225,10 @@ func mint{
         syscall_ptr: felt*, 
         range_check_ptr
     }(to: felt, tokenId: Uint256):
+    ReentrancyGuard._start()
     Ownable.assert_only_owner()
     ERC721_Enumerable._mint(to, tokenId)
+    ReentrancyGuard._end()
     return ()
 end
 
@@ -234,8 +238,10 @@ func burn{
         syscall_ptr: felt*, 
         range_check_ptr
     }(tokenId: Uint256):
+    ReentrancyGuard._start()
     ERC721.assert_only_token_owner(tokenId)
     ERC721_Enumerable._burn(tokenId)
+    ReentrancyGuard._end()
     return ()
 end
 
@@ -245,8 +251,10 @@ func setTokenURI{
         syscall_ptr: felt*, 
         range_check_ptr
     }(tokenId: Uint256, tokenURI: felt):
+    ReentrancyGuard._start()
     Ownable.assert_only_owner()
     ERC721._set_token_uri(tokenId, tokenURI)
+    ReentrancyGuard._end()
     return ()
 end
 
@@ -254,6 +262,11 @@ end
 # txTrade Custom functionality
 #
 
+#
+# Getters
+#
+
+# check if trade has been agreed
 @view
 func isAgreed{
         syscall_ptr : felt*, 
@@ -272,6 +285,7 @@ func isAgreed{
     return (agreed=agreed, timestamp=timestamp, counterpart=counterpart)
 end
 
+# number of trade of an address
 @view
 func tradeCount{
         syscall_ptr : felt*, 
@@ -288,6 +302,7 @@ func tradeCount{
     return (count=count)
 end
 
+# get tokenId for a specific counterpart and index
 @view
 func tradeId{
         syscall_ptr : felt*, 
@@ -305,21 +320,7 @@ func tradeId{
     return (tokenId=tokenId)
 end
 
-@external
-func setFee{
-        pedersen_ptr: HashBuiltin*, 
-        syscall_ptr: felt*, 
-        range_check_ptr
-    }(
-        tokenAddress: felt,
-        amount: Uint256
-    ) -> ():
-
-    TRADE_fees.write(tokenAddress, amount)
-
-    return ()
-end
-
+# check if a payment flow can be added to the trade
 @view
 func canAddPayment{
         syscall_ptr: felt*, 
@@ -345,33 +346,7 @@ func canAddPayment{
     return (ok)
 end
 
-
-@external
-func init{
-        pedersen_ptr: HashBuiltin*, 
-        syscall_ptr: felt*, 
-        range_check_ptr
-    }(
-        counterpart: felt,
-        agreementTerms_len: felt,
-        agreementTerms: felt*,
-        tokens_len: felt,
-        tokens: felt*
-    ) -> (
-        tokenId: Uint256
-    ):
-    alloc_locals
-
-    let (caller_address)    = get_caller_address()
-    let (tokenId)           = Trade.init(counterpart)    
-    
-    ERC721_Enumerable._mint(caller_address, tokenId)
-    Trade.set_agreement_terms(tokenId, agreementTerms_len, agreementTerms)
-    Trade.charge_fee(tokenId=tokenId, tokens_len=tokens_len, tokens=tokens)
-    
-    return (tokenId=tokenId)
-end
-
+# get the agreement terms
 @view
 func agreementTerms{
         syscall_ptr: felt*, 
@@ -387,6 +362,38 @@ func agreementTerms{
     return (agreement_terms_len=agreement_terms_len, agreement_terms=agreement_terms)
 end
 
+#
+# Externals
+#
+
+# initialize a trade
+@external
+func init{
+        pedersen_ptr: HashBuiltin*, 
+        syscall_ptr: felt*, 
+        range_check_ptr
+    }(
+        counterpart: felt,
+        agreementTerms_len: felt,
+        agreementTerms: felt*,
+        tokens_len: felt,
+        tokens: felt*
+    ) -> (
+        tokenId: Uint256
+    ):
+    alloc_locals
+    ReentrancyGuard._start()
+    let (caller_address)    = get_caller_address()
+    let (tokenId)           = Trade.init(counterpart)    
+    
+    ERC721_Enumerable._mint(caller_address, tokenId)
+    Trade.set_agreement_terms(tokenId, agreementTerms_len, agreementTerms)
+    Trade.charge_fee(tokenId=tokenId, tokens_len=tokens_len, tokens=tokens)
+    ReentrancyGuard._end()
+    return (tokenId=tokenId)
+end
+
+# agree to a trade
 @external
 func agree{
         pedersen_ptr: HashBuiltin*, 
@@ -395,12 +402,13 @@ func agree{
     }(
         tokenId: Uint256
     ):
-    
+    ReentrancyGuard._start()
     Trade.agree(tokenId)
+    ReentrancyGuard._end()
     return ()
 end
 
-
+# rate a given address and trade (tokenId)
 @external
 func rate{
         pedersen_ptr: HashBuiltin*, 
@@ -410,7 +418,24 @@ func rate{
         tokenId: Uint256,
         rating:  Uint256
     ):
-
+    ReentrancyGuard._start()
     Trade.rate(tokenId, rating)
+    ReentrancyGuard._end()
+    return ()
+end
+
+# set the fee for a given token
+@external
+func setFee{
+        pedersen_ptr: HashBuiltin*, 
+        syscall_ptr: felt*, 
+        range_check_ptr
+    }(
+        tokenAddress: felt,
+        amount: Uint256
+    ) -> ():
+    ReentrancyGuard._start()
+    TRADE_fees.write(tokenAddress, amount)
+    ReentrancyGuard._end()
     return ()
 end
