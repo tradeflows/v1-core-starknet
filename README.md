@@ -6,11 +6,11 @@
 
 [TradeFlows](http://www.tradeflows.io) is a decentralised Commerce Protocol on [StarkNet](https://starkware.co/starknet/). Our goal is to provide a set of on-chain tools that allow our community to to build the best commercial experiences between each other in a transparent, permissionless and trustless manner. 
 
+We are very proud to have received a grant from the Starkware!
+
 <p align="center">
   <img width="200" src="assets/StarkNet_logo.png" />
 </p>
-
-
 
 Current centralised trading workflows are: 
 - Uncertain
@@ -33,7 +33,7 @@ Usage
 This repo contains highly experimental code. Expect rapid iteration. Use at your own risk.
 
  
-## Architecture
+# Architecture
 The protocol is based on three infrastructure Smart Contracts:
 - **DAO**: Custom ERC20 contract that represents the ownership of the DAO. This contract is also the treasury to which all Trade Init / Minting fees go to.
 - **txTrade**: Custom ERC721 contract that stores the terms of the trade as a minted NFT. This contract also contains the functionality that allows the buyer to agree to the trade and the NFT is also the received of the programmed payment stream.
@@ -43,9 +43,9 @@ and a set of ERC20 wrapper contracts that enable all custom streaming and escrow
 - **txFlow**: Custom ERC20 contract that wraps around the target token, eg. USDC, and contains the streaming and self-custody functionality. This contract is also extended to attribute a balance to any ERC721 contract.
 
 
-## Commercial Workflow
+# Commercial Workflow
 When starting on a commercial journey, both buyers and sellers
-### Minting a Trade
+## Minting a Trade
 Steps when creating a new trade:
 
 Add money to wallet
@@ -59,26 +59,30 @@ Add money to wallet
 8. Service provider is now able to withdraw Flow tokens from the NFT Trade (_txFlow.withdrawAmountNFT_) that are streamed to them as time passes.
 9. Both Service providers and Buyers are able to withdraw trade Flow tokens (_txFlow.withdrawBase_) for the base token (USDC).
 
-## Contracts
+# Contracts
 During this alpha phase, we are deploying a set of test contracts to the Goerli Starknet testnet. The production contract will be deployed at a later date on to mainnet.
-### Infrastructure Alpha on Goerli Testnet
+
+⚠️ WARNING! ⚠️
+All of the contract addresses below will change as we iterate rapidly during these initial phases. Please keep a look out for changes in these addresses.
+
+## Infrastructure Alpha on Goerli Testnet
 | Contract |  Address |
 :-------------------------:|:-------------------------: 
-DAO      | [0x07702b971d8efd43b8826afb401b3effd0738c04abdf08defdce8de955638f8d](https://goerli.voyager.online/contract/)
-txTrade  | [0x0336218a2e313a9a71b533a4422a4ad1460f31de43f938cba1bfd4a18668160c](https://goerli.voyager.online/contract/)
-txDharma | [0x02642fbd5b5103c3f5616c2b3df744f69bdd0e576571b67d15cee444fd3eb074](https://goerli.voyager.online/contract/)
+DAO      | [0x075da41f4f406104725a274031e5877c8e02a11c7dd5a26b9082d26d52c68279](https://goerli.voyager.online/contract/0x075da41f4f406104725a274031e5877c8e02a11c7dd5a26b9082d26d52c68279)
+txTrade  | [0x03b2b2c398b845f6c7681a522d20879e970f32fffbc589f3ea9d16ba29df3bbf](https://goerli.voyager.online/contract/0x03b2b2c398b845f6c7681a522d20879e970f32fffbc589f3ea9d16ba29df3bbf)
+txDharma | [0x059812395d234b93be36d90eda3da7aa24cfad7324f7a0bf521b238f5a21705a](https://goerli.voyager.online/contract/0x059812395d234b93be36d90eda3da7aa24cfad7324f7a0bf521b238f5a21705a)
 
-### Flows Alpha on Goerli Testnet
+## Flows Alpha on Goerli Testnet
 | Contract |  Address |
 :-------------------------:|:-------------------------: 
-ERC20 Test       | [0x01c2e7c375935aef0bdeb9ea80768dd3553ea58b025105640d40e1db597d984d](https://goerli.voyager.online/contract/)
-ERC20 Test xFlow | [0x01c2e7c375935aef0bdeb9ea80768dd3553ea58b025105640d40e1db597d984d](https://goerli.voyager.online/contract/)
+ERC20 Test       | [0x05d77f13a19907f4f9b780ca9a5fca554455614c80aea6bff911a795827015d5](https://goerli.voyager.online/contract/0x05d77f13a19907f4f9b780ca9a5fca554455614c80aea6bff911a795827015d5)
+ERC20 Test xFlow | [0x0753ceaab6bfb045714e863b8aa009cb7498ad19839625c12fded36c91853f13](https://goerli.voyager.online/contract/0x0753ceaab6bfb045714e863b8aa009cb7498ad19839625c12fded36c91853f13)
 
 
-## Environment
+# Environment
 The development environment is based on [Hardhat](https://hardhat.org/) and the [ShardLabs Starknet plugin](https://github.com/Shard-Labs/starknet-hardhat-plugin). To work with this project you must first clone this repo. 
 
-### Install
+## Install
 Make sure you have [npm](https://www.npmjs.com) and [docker](https://www.docker.com/) installed. Then in this project's root folder run
 
     npm install
@@ -101,8 +105,13 @@ If devnet is chosen, ie. localhost, then the [shardlabs](https://github.com/Shar
 
 Upon start, the devnet will print out a list of wallet address and private keys with ETH. Use these in the **constants.ts** file as specified below.
 
+# Scripts
+
+To execute functions in Goerli Testnet you will need ETH which you can get through a faucet:
+[StarNet Faucet](https://faucet.goerli.starknet.io)
+
 ## Deploy
-The smart contracts are divided into two categories. Infrastructure contracts that manage the **DAO**, **Trade** and **Rating** functionality; and the flow
+The smart contracts are divided into two categories. Infrastructure contracts that manage the **DAO**, **Trade** and **Rating** functionality; and the **Flow** wrapper contracts.
 
 ### Deploy Infrastructure
 
@@ -116,8 +125,27 @@ Wrapper token deployment. Please adapt the scripts for any new token to be deplo
 
     npx hardhat run scripts/deploy-token.ts
 
+## Operations
+We have added an array of scripts to interact with the alpha infrastructure:
 
-## Testing
+### Deposit ERC20 to ERC20 Flow
+Script that deposits ERC20 tokens in the Flow contract to mint wrapper tokens. Note: this script requires the Owners private keys so this will not work in Testnet for the contracts in this document, you will need to deploy this to devnet.
+
+    npx hardhat run scripts/deposit-base.ts
+
+### ERC20 Balances
+Script that checks the balance of the ERC20 test token
+
+    npx hardhat run scripts/balance-erc20-check.ts
+
+
+### ERC20 Flow Balances
+Script that checks the balance of the ERC20 Flow test token
+
+    npx hardhat run scripts/balance-flow-check.ts
+
+
+# Testing
 
 Please ensure the correct accounts are being used in the
 
@@ -125,19 +153,37 @@ Please ensure the correct accounts are being used in the
 
 file. They will depend on the environment being devnet or alpha.
 
-    export const walletAddressOwner = '0x7e754085377ed9fa47f5c719e2a0b61b97511f471a9ac3e81d1c66a3d635c8a'
-    export const walletPrivateOwner = '0x7e93ff3898809a28b55777eaee38033'
+    export const walletAddressOwner         = '0x5d1120755d9d5380201a8ac8bf39f7c4e2dd886a5b1431b7ea8dfb4ea3f0624'
+    export const walletPrivateOwner         = '0xfa9ccf36421a514a2b8bcd75e06b884b'
 
-    export const walletAddress0 = '0x7e754085377ed9fa47f5c719e2a0b61b97511f471a9ac3e81d1c66a3d635c8a'
-    export const walletPrivate0 = '0x7e93ff3898809a28b55777eaee38033'
+    export const walletAddress0             = '0x7b85aa6f0bcb77bc76efafd22dfbb36055bd4915fd77d7d357fd7d3b366d9da'
+    export const walletPrivate0             = '0x3f195a2cc7e18acfea7b737abbac88f2'
 
-    export const walletAddress1 = '0x7dfc36361df72409a34356d61a5a0a7a2d55d17c720d1f12c675dc2cbfc144a'
-    export const walletPrivate1 = '0x438d7be0a6921a39269c3a5c3ad2ae23'
+    export const walletAddress1             = '0x10b0a921fe94090bba9d65478edb9a2fe17857bf719574a58b39cbe22d92e7c'
+    export const walletPrivate1             = '0xebd2156a6161176df1dc826d487b58c1'
 
 
 
-Test workflow
+### Initial Workflow
+Start by running scripts that deploy the entire infrastructure and test ERC20 tokens followed an execution of all relevant operations.
 
     npx hardhat test test/start.ts
 
-DESCRIPTIONS OF OTHER SCRIPTS!!!
+Once you run this script, a set of address will be generated, copy these addresses to the 
+
+    scripts/constants.ts
+
+file. Example:
+
+    export const daoContractAddress         = '0x03e122ff021fd9bf8952e55746ad095b751528ffcd5d40a4acc379a1d4431c25'
+    export const erc20ContractAddress       = '0x02d704491ed20caa95afa45184b7e9c5ecf13e1a079fdbb5b95ea39ca592cf29'
+    export const txFlowContractAddress      = '0x0746fffd49369c4bd3f5c970ff9885e0d4d3e6b6c43f2a15efea034dc61735a0'
+    export const txDharmaContractAddress    = '0x030260d11b2cd88a410572b3011357857c9fcef9bd431d38c8dc0c47c7fdc835'
+    export const txTradeContractAddress     = '0x05df41f469bf98be75e479385eee571ebedb72f70178fe00f17040f872c0b398'
+
+### Run again
+Then run the next test to ensure that recreating trades and rerunning these operations still works.
+
+    npx hardhat test test/again.ts
+
+### Check Balances
