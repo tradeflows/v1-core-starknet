@@ -1,10 +1,11 @@
-# TradeFlows Protocol - Hardhat Project
+# TradeFlows Core Protocol - Hardhat Project
 
 <p align="center">
   <img width="300" src="assets/tradeflows.png" />
 </p>
 
-[TradeFlows](http://www.tradeflows.io) is a decentralised Commerce Protocol on [StarkNet](https://starkware.co/starknet/). Our goal is to provide a set of on-chain tools that allow our community to to build the best commercial experiences between each other in a collaborative, transparent, permissionless and trustless manner. 
+
+[TradeFlows Core](http://www.tradeflows.io) is a decentralised Commerce Protocol on [StarkNet](https://starkware.co/starknet/). Our goal is to provide a set of on-chain tools that allow our community to to build the best commercial experiences between each other in a collaborative, transparent, permissionless and trustless manner. 
 
 We are very proud to have received a grant from the Starkware!
 

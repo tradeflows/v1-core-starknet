@@ -1,6 +1,15 @@
 # SPDX-License-Identifier: MIT
 # TradeFlows Flow library for Cairo v0.1.0 (traflows/library/flow.cairo)
+#
+#  _____             _     ______ _                   
+# |_   _|           | |    |  ___| |                  
+#   | |_ __ __ _  __| | ___| |_  | | _____      _____ 
+#   | | '__/ _` |/ _` |/ _ \  _| | |/ _ \ \ /\ / / __|
+#   | | | | (_| | (_| |  __/ |   | | (_) \ V  V /\__ \
+#   \_/_|  \__,_|\__,_|\___\_|   |_|\___/ \_/\_/ |___/
+#
 # Author: @NumbersDeFi
+
 
 %lang starknet
 
