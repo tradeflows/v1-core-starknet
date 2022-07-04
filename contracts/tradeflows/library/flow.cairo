@@ -344,6 +344,10 @@ namespace Flow:
 
         let (stream)            = FLOW_in.read(beneficiary_address, beneficiary_tokenId, id)
 
+        with_attr error_message("only the payer can ammend the stream"):
+            assert stream.payer = payer_address
+        end
+
         let (new_amount)        = SafeUint256.add(stream.locked_amount, amount)
 
         with_attr error_message("amount must be less than target amount"):
@@ -390,6 +394,11 @@ namespace Flow:
         let (payer_address)     = get_caller_address()
 
         let (stream)            = FLOW_in.read(beneficiary_address, beneficiary_tokenId, id)
+
+        with_attr error_message("only the payer can ammend the stream"):
+            assert stream.payer = payer_address
+        end
+
 
         with_attr error_message("amount must be less or equal to locked amount"):
             let (new_amount)    = SafeUint256.sub_le(stream.locked_amount, amount)

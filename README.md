@@ -13,7 +13,7 @@ We are very proud to have received a grant from the Starkware!
   <img width="200" src="assets/StarkNet_logo.png" />
 </p>
 
-Please give us a GitHub Star Above if you like this project. We are actively looking for contributors so please reach out to us if you are interested.
+Please give us a GitHub Star 🌟 Above if you like this project. We are actively looking for contributors so please reach out to us if you are interested.
 
 Current commercial relationships use archaic methods to interact. PDFs, digital signature, emails and bank transfers plague the workflows currently used by people when engaging commercially. The lack of structure is a culprit for countless operational errors, uncertainty and high costs. TradeFlows aims to solve by offering a platform that allows people to build structure and certainty to workflows in all industrys. 
 
@@ -72,15 +72,15 @@ All of the contract addresses below will change as we iterate rapidly during the
 ## Infrastructure Alpha on Goerli Testnet
 | Contract |  Address |
 :-------------------------:|:-------------------------: 
-DAO      | [0x075da41f4f406104725a274031e5877c8e02a11c7dd5a26b9082d26d52c68279](https://goerli.voyager.online/contract/0x075da41f4f406104725a274031e5877c8e02a11c7dd5a26b9082d26d52c68279)
-txTrade  | [0x03b2b2c398b845f6c7681a522d20879e970f32fffbc589f3ea9d16ba29df3bbf](https://goerli.voyager.online/contract/0x03b2b2c398b845f6c7681a522d20879e970f32fffbc589f3ea9d16ba29df3bbf)
-txDharma | [0x059812395d234b93be36d90eda3da7aa24cfad7324f7a0bf521b238f5a21705a](https://goerli.voyager.online/contract/0x059812395d234b93be36d90eda3da7aa24cfad7324f7a0bf521b238f5a21705a)
+DAO      | [0x0351172e2bb614d3354c8c5aba22d777f6faeba2b66744f7116e96b79358dac0](https://goerli.voyager.online/contract/0x0351172e2bb614d3354c8c5aba22d777f6faeba2b66744f7116e96b79358dac0)
+txTrade  | [0x04f7ce277a2d81fb20466f07017037e1a9762c308cc86a95f9534c61f3412714](https://goerli.voyager.online/contract/0x04f7ce277a2d81fb20466f07017037e1a9762c308cc86a95f9534c61f3412714)
+txDharma | [0x07d00d72858504a84a1a09a06e60800811c2b8d720474ca420f2fa7bc1b1104a](https://goerli.voyager.online/contract/0x07d00d72858504a84a1a09a06e60800811c2b8d720474ca420f2fa7bc1b1104a)
 
 ## Flows Alpha on Goerli Testnet
 | Contract |  Address |
 :-------------------------:|:-------------------------: 
-ERC20 Test       | [0x05d77f13a19907f4f9b780ca9a5fca554455614c80aea6bff911a795827015d5](https://goerli.voyager.online/contract/0x05d77f13a19907f4f9b780ca9a5fca554455614c80aea6bff911a795827015d5)
-ERC20 Test xFlow | [0x0753ceaab6bfb045714e863b8aa009cb7498ad19839625c12fded36c91853f13](https://goerli.voyager.online/contract/0x0753ceaab6bfb045714e863b8aa009cb7498ad19839625c12fded36c91853f13)
+ERC20 Test       | [0x039bded9481f5fc7d46185c44655206362a647bb046dd97efcd2524a10bf7ab2](https://goerli.voyager.online/contract/0x039bded9481f5fc7d46185c44655206362a647bb046dd97efcd2524a10bf7ab2)
+ERC20 Test xFlow | [0x002a63a6069e8209ad6bcab1d11d75cead44003aaaccbfad069954e32e533f35](https://goerli.voyager.online/contract/0x002a63a6069e8209ad6bcab1d11d75cead44003aaaccbfad069954e32e533f35)
 
 
 # Environment

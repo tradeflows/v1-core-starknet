@@ -754,6 +754,24 @@ describe("Start Workflow", function () {
       )
   })
 
+  it("decrease amount wrong", async function() {   
+    try{
+    
+      let tokenId = toUint256WithFelts("0")
+    const initial_amount = toUint256WithFelts((BigInt('500'.replace(/,/g, ''))).toString())
+
+
+    await account1.invoke(
+        txFlowContract, 
+        'decreaseAmount', 
+        { beneficiary_address: txTradeContract.address, beneficiary_tokenId: tokenId, id: 0, amount: initial_amount }, 
+        { maxFee: FEE}
+      )
+      throw new Error('should have failed')
+    } catch (err: any) {
+    }
+  })
+
   it("balance erc20", async function() {   
     const data0 = await account0.call(erc20Contract, "balanceOf", { account: account0.starknetContract.address })
     const data1 = await account0.call(erc20Contract, "balanceOf", { account: account1.starknetContract.address })
