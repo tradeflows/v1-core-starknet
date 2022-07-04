@@ -7,6 +7,8 @@
 
 [TradeFlows Core](http://www.tradeflows.io) is a decentralised Commerce Protocol on [StarkNet](https://starkware.co/starknet/). Our goal is to provide a set of on-chain tools that allow our community to to build the best commercial experiences between each other in a collaborative, transparent, permissionless and trustless manner. 
 
+For a more indepth discussion about the TradeFlows DAO, please refer to our [GitBook page](https://tradeflows-dao.gitbook.io/tradeflows-documentation/).
+
 We are very proud to have received a grant from the Starkware!
 
 <p align="center">
