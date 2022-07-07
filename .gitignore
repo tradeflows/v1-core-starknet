@@ -8,6 +8,9 @@ artifacts
 __pycache__
 .pytest_cache
 
+#Constants env
+scripts/constants.ts
+
 #Starknet plugin
 starknet-artifacts
 

@@ -99,6 +99,8 @@ Compile all the contracts
 
     npx hardhat run scripts/compile-contracts.ts
 
+    NB: at initial compilation, please set `paths: ["contracts"]` and then set it back to `paths: ["contracts/tradeflows"]`
+
 ## Local vs Chain
 The development environment is set through the [hardhat.config.ts](./hardhat.config.ts) file through the **network** property:
 
@@ -109,12 +111,16 @@ If devnet is chosen, ie. localhost, then the [shardlabs](https://github.com/Shar
 
     docker run -it -p 127.0.0.1:5050:5050 shardlabs/starknet-devnet
 
+    For apple silicon:
+    docker run -it -p 127.0.0.1:5050:5050 shardlabs/starknet-devnet:0.2.4-arm
+
+
 Upon start, the devnet will print out a list of wallet address and private keys with ETH. Use these in the **constants.ts** file as specified below.
 
 # Scripts
 
 To execute functions in Goerli Testnet you will need ETH which you can get through a faucet:
-[StarNet Faucet](https://faucet.goerli.starknet.io)
+[StarkNet Faucet](https://faucet.goerli.starknet.io)
 
 ## Deploy
 The smart contracts are divided into two categories. Infrastructure contracts that manage the **DAO**, **Trade** and **Rating** functionality; and the **Flow** wrapper contracts.
@@ -153,11 +159,11 @@ Script that checks the balance of the ERC20 Flow test token
 
 # Testing
 
-Please ensure the correct accounts are being used in the
+Create a copy of scripts/constants-example.ts and name it :
 
     scripts/constants.ts
 
-file. They will depend on the environment being devnet or alpha.
+Populate file accordingly, they will depend on the environment being devnet or alpha.
 
     export const walletAddressOwner         = '0x5d1120755d9d5380201a8ac8bf39f7c4e2dd886a5b1431b7ea8dfb4ea3f0624'
     export const walletPrivateOwner         = '0xfa9ccf36421a514a2b8bcd75e06b884b'
