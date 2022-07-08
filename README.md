@@ -35,8 +35,8 @@ Blockchain is able to mitigate all four negative effects using Smart Contracts t
 - Collateralise the payment streams in order to show an availability of funds without losing control over them. The seller knows that as long as the funds are in the self-custody contract, they will only be used to pay the stream;
 - Rate each other while there is a trade alive through a non-transferable ERC20 token. This offers a high social rating with a degree of integrity since it can only be attributed by members whom which a wallet is trading with.
 
-Usage
-⚠️ WARNING! ⚠️
+
+## ⚠️ WARNING! ⚠️
 This repo contains highly experimental code. Expect rapid iteration. Use at your own risk.
 
  
@@ -199,8 +199,9 @@ Then run the next test to ensure that recreating trades and rerunning these oper
     npx hardhat test test/again.ts
 
 # Notes
-⚠️ WARNING! ⚠️
+## ⚠️ WARNING! ⚠️
 This repo contains highly experimental code. Expect rapid iteration. Use at your own risk.
 
+## Collaboration
 We are actively looking for contributors so please reach out if you are interested.
 
