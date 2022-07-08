@@ -68,7 +68,7 @@ The first steps are creating a new trade:
 # Contracts
 During this alpha phase, we are deploying a set of test contracts to the Goerli Starknet testnet. The production contract will be deployed at a later date on to mainnet.
 
-⚠️ WARNING! ⚠️
+## ⚠️ WARNING! ⚠️
 All of the contract addresses below will change as we iterate rapidly during these initial phases. Please keep a look out for changes in these addresses.
 
 ## Infrastructure Alpha on Goerli Testnet
