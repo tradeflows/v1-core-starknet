@@ -165,7 +165,7 @@ func balanceOfNFT{
         let (count)                             = FLOW_in_count.read(beneficiary=account, tokenId=tokenId)
 
         let (available_amount, locked_amount)   = Flow.aggregated_amount(account, tokenId, block_timestamp, count)
-
+        
         let (res) = SafeUint256.add(available_amount, balance)        
         return (res)
     end
@@ -203,7 +203,7 @@ func transfer{
     ):
 
     let (caller_address)    = get_caller_address()
-    let tokenId            = Uint256(0,0)
+    let tokenId             = Uint256(0,0)
 
     Flow.withdraw(caller_address, tokenId, FALSE, FALSE)
     ERC20.transfer(recipient, amount)
@@ -362,9 +362,11 @@ func withdrawAmount{
         block_timestamp: felt
     ):
 
-    let tokenId = Uint256(0,0)
+    let tokenId  = Uint256(0,0)
 
-    let (available_amount, locked_amount, block_timestamp) = Flow.get_withdraw_amount(beneficiary_address, tokenId)
+    let (caller) = get_caller_address()
+
+    let (available_amount, locked_amount, block_timestamp) = Flow.get_withdraw_amount(beneficiary_address, tokenId, caller)
     return (available_amount=available_amount, locked_amount=locked_amount, block_timestamp=block_timestamp)
 end
 
@@ -383,7 +385,8 @@ func withdrawAmountNFT{
          block_timestamp: felt
     ):
 
-    let (available_amount, locked_amount, block_timestamp) = Flow.get_withdraw_amount(beneficiary_address, beneficiary_tokenId)
+    let (caller) = get_caller_address()
+    let (available_amount, locked_amount, block_timestamp) = Flow.get_withdraw_amount(beneficiary_address, beneficiary_tokenId, caller)
     return (available_amount=available_amount, locked_amount=locked_amount, block_timestamp=block_timestamp)
 end
 

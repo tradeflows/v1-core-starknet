@@ -694,27 +694,27 @@ describe("Start Workflow", function () {
     console.log('total', (BigInt(b0) + BigInt(b1) + BigInt(bn) + BigInt(bc) + BigInt(bd)).toString())
   })
 
-  it("pause", async function() {   
-    let tokenId = toUint256WithFelts("0")
+  // it("pause", async function() {   
+  //   let tokenId = toUint256WithFelts("0")
     
-    await account0.invoke(
-        txFlowContract, 
-        'pause', 
-        { beneficiary_address: txTradeContract.address, beneficiary_tokenId: tokenId, pause: 1 }, 
-        { maxFee: FEE}
-      )
-  })
+  //   await account0.invoke(
+  //       txFlowContract, 
+  //       'pause', 
+  //       { beneficiary_address: txTradeContract.address, beneficiary_tokenId: tokenId, pause: 1 }, 
+  //       { maxFee: FEE}
+  //     )
+  // })
 
-  it("pause", async function() {   
-    let tokenId = toUint256WithFelts("0")
+  // it("pause", async function() {   
+  //   let tokenId = toUint256WithFelts("0")
     
-    await account1.invoke(
-        txFlowContract, 
-        'pause', 
-        { beneficiary_address: txTradeContract.address, beneficiary_tokenId: tokenId, pause: 1 }, 
-        { maxFee: FEE}
-      )
-  })
+  //   await account1.invoke(
+  //       txFlowContract, 
+  //       'pause', 
+  //       { beneficiary_address: txTradeContract.address, beneficiary_tokenId: tokenId, pause: 1 }, 
+  //       { maxFee: FEE}
+  //     )
+  // })
  
 
   it("balance", async function() {   
@@ -770,6 +770,27 @@ describe("Start Workflow", function () {
       throw new Error('should have failed')
     } catch (err: any) {
     }
+  })
+
+  it("member weight", async function() {   
+    let tokenId = toUint256WithFelts("0")
+    const data0 = await account0.call(txTradeContract, "memberWeight", { tokenId: tokenId, address: account0.starknetContract.address })
+    console.log('member weight 0', data0)
+    const data1 = await account0.call(txTradeContract, "memberWeight", { tokenId: tokenId, address: account1.starknetContract.address })
+    console.log('member weight 1', data1)
+  })
+
+  it("withdraw", async function() {
+    let tokenId = toUint256WithFelts("0")
+    let txHash = await account1.invoke(
+        txFlowContract, 
+        "withdrawNFT", 
+        { beneficiary_address: txTradeContract.address, beneficiary_tokenId: tokenId }, 
+        { maxFee: FEE}
+      )
+
+    let txReceipt = await starknet.getTransactionReceipt(txHash)
+    console.log('Tx:', txHash)
   })
 
   it("balance erc20", async function() {   

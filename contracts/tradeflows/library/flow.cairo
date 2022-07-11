@@ -19,6 +19,7 @@ from starkware.cairo.common.uint256 import (
     Uint256, 
     uint256_eq,
     uint256_le,
+    uint256_lt,
     uint256_check
 )
 from starkware.starknet.common.syscalls import (
@@ -607,7 +608,8 @@ namespace Flow:
             range_check_ptr
         }(
             beneficiary_address: felt,
-            beneficiary_tokenId: Uint256
+            beneficiary_tokenId: Uint256,
+            member_address: felt
         ) -> (
             available_amount: Uint256, 
             locked_amount: Uint256, 
@@ -624,7 +626,9 @@ namespace Flow:
         let (count)                             = FLOW_in_count.read(beneficiary=beneficiary_address, tokenId=beneficiary_tokenId)
 
         let (available_amount, locked_amount)   = aggregated_amount(beneficiary_address, beneficiary_tokenId, block_timestamp, count)
-        
+
+        let (available_amount, locked_amount)   = weightMembership(beneficiary_address, beneficiary_tokenId, available_amount, locked_amount)
+            
         return (available_amount=available_amount, locked_amount=locked_amount, block_timestamp=block_timestamp)
     end
 
@@ -770,6 +774,8 @@ namespace Flow:
                 else:
                     let (payout, locked)                        = calc_stream(stream=stream, block_timestamp=block_timestamp)
 
+                    # let (payout, locked)   = weightMembership(beneficiary_address, beneficiary_tokenId, payout, locked)
+
                     let (total_withdraw)                        = SafeUint256.add(stream.total_withdraw, payout)
 
                     if pause == -1:
@@ -795,6 +801,39 @@ namespace Flow:
                     end
                 end
             end
+        end
+    end
+
+     func weightMembership{
+            syscall_ptr: felt*, 
+            pedersen_ptr: HashBuiltin*, 
+            range_check_ptr
+        }(
+            beneficiary_address: felt,
+            beneficiary_tokenId: Uint256,
+            available_amount: Uint256, 
+            locked_amount: Uint256
+        ) -> (
+            available: Uint256, 
+            locked: Uint256
+        ):
+        alloc_locals
+        
+        let (caller_address)                             = get_caller_address()
+        if caller_address == beneficiary_address:
+            return (available_amount, locked_amount)
+        else:
+            let (weight, weight_base)                    = ItxTrade.memberWeight(contract_address=beneficiary_address, tokenId=beneficiary_tokenId, address=caller_address)
+
+            let (available_amount)                       = SafeUint256.mul(available_amount, Uint256(weight,0))
+            let (available_amount, _)                     = SafeUint256.div_rem(available_amount, Uint256(weight_base,0))
+
+
+            
+            let (locked_amount)                          = SafeUint256.mul(locked_amount, Uint256(weight,0))
+            let (locked_amount, _)                       = SafeUint256.div_rem(locked_amount, Uint256(weight_base,0))
+            
+            return (available_amount, locked_amount)
         end
     end
 
@@ -826,6 +865,9 @@ namespace Flow:
 
         let (count)                                  = FLOW_in_count.read(beneficiary=beneficiary_address, tokenId=beneficiary_tokenId)
         let (available_amount, locked_amount)        = aggregated_amount(beneficiary_address, beneficiary_tokenId, block_timestamp, count-1)
+        
+        let (available_amount, locked_amount)        = weightMembership(beneficiary_address, beneficiary_tokenId, available_amount, locked_amount)
+        
 
         let (is_zero_amount) = uint256_eq(available_amount,uint256_0)
 

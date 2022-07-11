@@ -354,6 +354,24 @@ func canAddPayment{
     return (ok)
 end
 
+# check if a payment flow can be added to the trade
+@view
+func memberWeight{
+        syscall_ptr: felt*, 
+        pedersen_ptr: HashBuiltin*, 
+        range_check_ptr
+    }(
+        tokenId: Uint256, 
+        address: felt
+    ) -> (
+        weight: felt,
+        weight_base: felt
+    ):
+    
+    let (weight, weight_base) = Trade.getWeight(tokenId=tokenId, address=address)
+    return (weight=weight, weight_base=weight_base)
+end
+
 # get the agreement terms
 @view
 func agreementTerms{
@@ -366,7 +384,7 @@ func agreementTerms{
         agreement_terms_len : felt, 
         agreement_terms : felt*
     ):
-    let (agreement_terms_len: felt, agreement_terms: felt*) = Trade.agreement_terms(tokenId)
+    let (agreement_terms_len: felt, agreement_terms: felt*) = Trade.agreementTerms(tokenId)
     return (agreement_terms_len=agreement_terms_len, agreement_terms=agreement_terms)
 end
 
@@ -395,8 +413,8 @@ func init{
     let (tokenId)           = Trade.init(counterpart)    
     
     ERC721_Enumerable._mint(caller_address, tokenId)
-    Trade.set_agreement_terms(tokenId, agreementTerms_len, agreementTerms)
-    Trade.charge_fee(tokenId=tokenId, tokens_len=tokens_len, tokens=tokens)
+    Trade.setAgreementTerms(tokenId, agreementTerms_len, agreementTerms)
+    Trade.chargeFee(tokenId=tokenId, tokens_len=tokens_len, tokens=tokens)
     ReentrancyGuard._end()
     return (tokenId=tokenId)
 end

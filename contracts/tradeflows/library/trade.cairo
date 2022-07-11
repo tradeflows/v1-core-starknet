@@ -127,6 +127,23 @@ end
 func TRADE_trade_idx(address: felt, idx: felt) -> (tokenId: Uint256):
 end
 
+# Storage of the member addresses (array) of an agreement
+@storage_var
+func addresses(tokenId : Uint256, index : felt) -> (res : felt):
+end
+
+# Storage of the member weights (array) of an agreement
+@storage_var
+func weights(tokenId : Uint256, index : felt) -> (res : felt):
+end
+
+# Storage of the member length of the terms array of an agreement 
+@storage_var
+func weights_len(tokenId : Uint256) -> (res : felt):
+end
+
+const _weight_base = 1000000000000
+
 namespace Trade:
 
     # init a trade
@@ -139,7 +156,8 @@ namespace Trade:
         ) -> (
             tokenId: Uint256
         ):
-        
+        alloc_locals
+
         let (caller_address)   = get_caller_address()
 
         let (tokenId : Uint256)= id_counter.read()
@@ -155,6 +173,12 @@ namespace Trade:
         let new_count          = t_count + 1
         TRADE_trade_count.write(counterpart, new_count)
 
+        let (local addrs_value) = alloc()
+        assert [addrs_value] = caller_address
+        let (local wgts_value) = alloc()
+        assert [wgts_value] = _weight_base
+        setWeights(tokenId, 1, addrs_value, 1, wgts_value)
+        
         init_called.emit(tokenId, caller_address, counterpart)
         
         return (tokenId=tokenId)
@@ -337,7 +361,7 @@ namespace Trade:
     end
 
     # get agreement terms
-    func agreement_terms{
+    func agreementTerms{
             syscall_ptr : felt*, 
             pedersen_ptr : HashBuiltin*, 
             range_check_ptr
@@ -370,7 +394,7 @@ namespace Trade:
     end
 
     # set agreement terms
-    func set_agreement_terms{
+    func setAgreementTerms{
             syscall_ptr : felt*, 
             pedersen_ptr : HashBuiltin*, 
             range_check_ptr
@@ -392,7 +416,7 @@ namespace Trade:
     end
 
     # reset agreement terms
-    func reset_agreements_terms{
+    func resetAgreementsTerms{
             syscall_ptr : felt*, 
             pedersen_ptr : HashBuiltin*, 
             range_check_ptr
@@ -404,7 +428,7 @@ namespace Trade:
             uint256_check(tokenId)
         end
 
-        set_agreement_terms(tokenId, 0, &[0])
+        setAgreementTerms(tokenId, 0, &[0])
         return ()
     end
 
@@ -450,7 +474,7 @@ namespace Trade:
     end
 
     # charge fees
-    func charge_fee{
+    func chargeFee{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -491,8 +515,251 @@ namespace Trade:
 
         TRADE_paid_fees.write(tokenId, tok, 1)
         
-        charge_fee(tokenId=tokenId, tokens_len=tokens_len-1,tokens=tokens+1)
+        chargeFee(tokenId=tokenId, tokens_len=tokens_len-1,tokens=tokens+1)
 
+        return ()
+    end
+
+    # set weights
+    func setWeights{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256, 
+            addrss_len : felt, 
+            addrss : felt*,
+            wgts_len : felt, 
+            wgts : felt*
+        ):
+
+        uint256_check(tokenId)
+        
+        with_attr error_message("address length must equal to weights length"):
+            assert addrss_len = wgts_len
+        end
+
+        _set_weights(tokenId, wgts_len, wgts)
+        _set_addresses(tokenId, wgts_len, addrss)
+        weights_len.write(tokenId, wgts_len)
+        return ()
+    end
+
+    # get weights
+    func getWeights{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256
+        ) -> (
+            wgts_len : felt, 
+            wgts : felt*
+        ):
+        alloc_locals
+
+        # ensure valid uint256
+        with_attr error_message("tokenId is not a valid Uint256"):
+            uint256_check(tokenId)
+        end
+
+        # ensure token with token_id exists
+        let (exists) = ERC721._exists(tokenId)
+        with_attr error_message("nonexistent token"):
+            assert exists = TRUE
+        end
+
+        let (local wgts_len) = weights_len.read(tokenId)
+
+        let (local wgts_value) = alloc()
+
+        _weights(tokenId, wgts_len, wgts_value)
+
+        return (wgts_len, wgts_value)
+    end
+
+    # get addresses
+    func getAddresses{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256
+        ) -> (
+            addrs_len : felt, 
+            addrs : felt*
+        ):
+        alloc_locals
+
+        # ensure valid uint256
+        with_attr error_message("tokenId is not a valid Uint256"):
+            uint256_check(tokenId)
+        end
+
+        # ensure token with token_id exists
+        let (exists) = ERC721._exists(tokenId)
+        with_attr error_message("nonexistent token"):
+            assert exists = TRUE
+        end
+
+        let (local addrs_len) = weights_len.read(tokenId)
+
+        let (local addrs_value) = alloc()
+
+        _addresses(tokenId, addrs_len, addrs_value)
+
+        return (addrs_len, addrs_value)
+    end
+
+    # get weight
+    func getWeight{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256,
+            address: felt
+        ) -> (
+            weight : felt,
+            weight_base: felt
+        ):
+        alloc_locals
+
+        # ensure valid uint256
+        with_attr error_message("tokenId is not a valid Uint256"):
+            uint256_check(tokenId)
+        end
+
+        # ensure token with token_id exists
+        let (exists)                    = ERC721._exists(tokenId)
+        with_attr error_message("nonexistent token"):
+            assert exists = TRUE
+        end
+
+        let (addrss_len, addrss)        = getAddresses(tokenId)
+        let (wgts_len, wgts)            = getWeights(tokenId)
+
+        with_attr error_message("address length is not equal to weights length"):
+            assert wgts_len = addrss_len
+        end
+
+
+        let (weight)                    = _get_weight(address, wgts_len, wgts, addrss)
+
+        with_attr error_message("weight cannot be 0"):
+            assert_nn(weight)
+        end
+
+        return (weight=weight, weight_base=_weight_base)
+    end
+
+    # helper: get weights
+    func _get_weight{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            address: felt,
+            wgts_len: felt,
+            wgts: felt*,
+            addrss: felt*
+            
+        ) -> (
+            weight : felt
+        ):
+        if wgts_len == 0:
+            return (weight=0)
+        end
+
+        let _addrss = [addrss]
+        let _wgt    = [wgts]
+        
+        if address == _addrss:
+            return (weight=_wgt)
+        else:
+            let (weight) = _get_weight(address, wgts_len-1, wgts+1, addrss+1)
+            return (weight=weight)
+        end
+    end
+
+    # helper: set weights
+    func _set_weights{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256, 
+            wgts_len : felt, 
+            wgts : felt*
+        ):
+
+        if wgts_len == 0:
+            return ()
+        end
+
+        weights.write(tokenId, wgts_len, [wgts])
+        _set_weights(tokenId, wgts_len - 1, wgts + 1)
+        return ()
+    end
+
+    # helper: set addresses
+    func _set_addresses{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256, 
+            addrss_len : felt, 
+            addrss : felt*
+        ):
+
+        if addrss_len == 0:
+            return ()
+        end
+
+        addresses.write(tokenId, addrss_len, [addrss])
+        _set_addresses(tokenId, addrss_len - 1, addrss + 1)
+        return ()
+    end
+
+    # helper: get weights
+    func _weights{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256, 
+            wgts_len : felt, 
+            wgts : felt*
+        ):
+
+        if wgts_len == 0:
+            return ()
+        end
+
+        let (wgts_value_at_index) = weights.read(tokenId, wgts_len)
+        assert [wgts] = wgts_value_at_index
+        _weights(tokenId, wgts_len - 1, wgts + 1)
+        return ()
+    end
+
+    func _addresses{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256, 
+            addrss_len : felt, 
+            addrss : felt*
+        ):
+
+        if addrss_len == 0:
+            return ()
+        end
+
+        let (addrss_value_at_index) = addresses.read(tokenId, addrss_len)
+        assert [addrss] = addrss_value_at_index
+        _addresses(tokenId, addrss_len - 1, addrss + 1)
         return ()
     end
 end

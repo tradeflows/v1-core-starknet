@@ -19,5 +19,8 @@ from starkware.cairo.common.uint256 import Uint256
 namespace ItxTrade:
     func canAddPayment(tokenId: Uint256, tokenAddress: felt) -> (success: felt):
     end
+
+    func memberWeight(tokenId: Uint256, address: felt) -> (weight: felt, weight_base: felt):
+    end
 end
 

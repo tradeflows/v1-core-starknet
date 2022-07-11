@@ -109,11 +109,12 @@ The development environment is set through the [hardhat.config.ts](./hardhat.con
 
 If devnet is chosen, ie. localhost, then the [shardlabs](https://github.com/Shard-Labs/starknet-devnet) docker container must be running:
 
-    docker run -it -p 127.0.0.1:5050:5050 shardlabs/starknet-devnet
+    docker run -it -p 127.0.0.1:5050:5050 shardlabs/starknet-devnet:0.2.3
 
     For apple silicon:
-    docker run -it -p 127.0.0.1:5050:5050 shardlabs/starknet-devnet:0.2.4-arm
+    docker run -it -p 127.0.0.1:5050:5050 shardlabs/starknet-devnet:0.2.3-arm
 
+NOTE: The shardlabs/starknet-devnet image version 0.2.4 and 0.2.5 does not work. 
 
 Upon start, the devnet will print out a list of wallet address and private keys with ETH. Use these in the **constants.ts** file as specified below.
 
