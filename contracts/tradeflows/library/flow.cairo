@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows Flow library for Cairo v0.1.0 (traflows/library/flow.cairo)
+# TradeFlows Flow library for Cairo v0.1.1 (traflows/library/flow.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  

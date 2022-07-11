@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows ERC20 Wrapper Contracts for Cairo v0.1.0 (traflows/txFlow.cairo)
+# TradeFlows ERC20 Wrapper Contracts for Cairo v0.1.1 (traflows/txFlow.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  
