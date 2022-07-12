@@ -1,6 +1,6 @@
 import { starknet } from "hardhat";
 import { StarknetContract, StarknetContractFactory, Account } from "hardhat/types/runtime";
-import { TIMEOUT, FEE, ETH_WEI, walletAddressOwner, walletPrivateOwner, walletAddress0, walletPrivate0, walletAddress1, walletPrivate1 } from "../scripts/constants";
+import { TIMEOUT, FEE, WEIGHT_BASE, ETH_WEI, walletAddressOwner, walletPrivateOwner, walletAddress0, walletPrivate0, walletAddress1, walletPrivate1 } from "../scripts/constants";
 import { strToFeltArr, toUint256WithFelts, fromUint256WithFelts } from "../scripts/starknetUtils"
 
 describe("Start Workflow", function () {
@@ -270,7 +270,9 @@ describe("Start Workflow", function () {
         { 
           counterpart: account0.starknetContract.address, 
           agreementTerms: strToFeltArr(JSON.stringify(tradeInfo)),
-          tokens: [txFlowContract.address]
+          tokens: [txFlowContract.address],
+          members: [account1.starknetContract.address],
+          weights: [WEIGHT_BASE]
         },
         { maxFee: FEE}
       )

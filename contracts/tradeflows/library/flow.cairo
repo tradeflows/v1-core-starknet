@@ -115,7 +115,7 @@ end
 namespace Flow:
 
     # Set the base token
-    func set_base_token{
+    func setBaseToken{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -129,7 +129,7 @@ namespace Flow:
     end 
 
     # Deposit token
-    func deposit_base{
+    func depositBase{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -154,7 +154,7 @@ namespace Flow:
     end 
 
     # Withdraw token
-    func withdray_base{
+    func withdrawBase{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -206,7 +206,7 @@ namespace Flow:
     end
 
     # Returns the current state.
-    func get_state{
+    func getState{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -223,7 +223,7 @@ namespace Flow:
     end
 
     # Add a new payment stream
-    func add_maturity_stream{
+    func addMaturityStream{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -313,7 +313,7 @@ namespace Flow:
     end
 
     # Increase locked amount for an existing stream
-    func increase_amount{
+    func increaseAmount{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -365,7 +365,7 @@ namespace Flow:
     end
 
     # Decrease locked amount for an existing stream
-    func decrease_amount{
+    func decreaseAmount{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -417,7 +417,7 @@ namespace Flow:
     end
 
     # Get the current count of the in streams of the caller wallet
-    func maturity_stream_count_in{
+    func maturityStreamCountIn{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -438,7 +438,7 @@ namespace Flow:
     end
 
     # Get the current count of the out streams of the caller wallet
-    func maturity_stream_count_out{
+    func maturityStreamCountOut{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -454,7 +454,7 @@ namespace Flow:
     end
 
     # Get the stream paid from wallet
-    func stream_in{
+    func streamIn{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -482,7 +482,7 @@ namespace Flow:
     end
 
     # Get the stream paid to wallet
-    func stream_out{
+    func streamOut{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -509,7 +509,7 @@ namespace Flow:
         return (payer=stream.payer, amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time)
     end
 
-    # calculate the amount available and locked
+    # helper: calculate the amount available and locked
     func calc_stream{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
@@ -552,7 +552,7 @@ namespace Flow:
     end
 
     # Recursive helper function to get the available and locked amounts to the caller wallet is able to withdraw
-    func aggregated_amount{
+    func aggregatedAmount{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -578,7 +578,7 @@ namespace Flow:
             return (available_amount=uint256_0, locked_amount=uint256_0)
         end
 
-        let (inner_available_amount, inner_locked_amount) = aggregated_amount(beneficiary_address=beneficiary_address, beneficiary_tokenId=beneficiary_tokenId, block_timestamp=block_timestamp, idx=idx-1)
+        let (inner_available_amount, inner_locked_amount) = aggregatedAmount(beneficiary_address=beneficiary_address, beneficiary_tokenId=beneficiary_tokenId, block_timestamp=block_timestamp, idx=idx-1)
         
         let (stream)                    = FLOW_in.read(beneficiary=beneficiary_address, tokenId=beneficiary_tokenId, idx=idx)
 
@@ -602,7 +602,7 @@ namespace Flow:
     end
 
     # Get the available and locked amounts to the caller wallet is able to withdraw
-    func get_withdraw_amount{
+    func getWithdrawAmount{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -625,14 +625,14 @@ namespace Flow:
         let (block_timestamp)                   = get_block_timestamp()
         let (count)                             = FLOW_in_count.read(beneficiary=beneficiary_address, tokenId=beneficiary_tokenId)
 
-        let (available_amount, locked_amount)   = aggregated_amount(beneficiary_address, beneficiary_tokenId, block_timestamp, count)
+        let (available_amount, locked_amount)   = aggregatedAmount(beneficiary_address, beneficiary_tokenId, block_timestamp, count)
 
         let (available_amount, locked_amount)   = weightMembership(beneficiary_address, beneficiary_tokenId, available_amount, locked_amount)
             
         return (available_amount=available_amount, locked_amount=locked_amount, block_timestamp=block_timestamp)
     end
 
-    # Recursive helper function to get the locked amount to be paid by the caller wallet to others.
+    # helper: Recursive helper function to get the locked amount to be paid by the caller wallet to others.
     func streams_aggregated_locked_amount_out{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
@@ -679,7 +679,7 @@ namespace Flow:
     end
 
     # Get the locked amount to be paid by the caller wallet to others.
-    func locked_amount_out{
+    func lockedAmountOut{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -699,7 +699,7 @@ namespace Flow:
         return (locked_amount=locked_amount, block_timestamp=block_timestamp)
     end
 
-    # Recursive helper function to Withdrawn any available amount.
+    # helper: Recursive helper function to Withdrawn any available amount.
     func withdraw_aggregated_amount{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
@@ -804,7 +804,7 @@ namespace Flow:
         end
     end
 
-     func weightMembership{
+    func weightMembership{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -864,7 +864,7 @@ namespace Flow:
         let uint256_0 = Uint256(0,0)
 
         let (count)                                  = FLOW_in_count.read(beneficiary=beneficiary_address, tokenId=beneficiary_tokenId)
-        let (available_amount, locked_amount)        = aggregated_amount(beneficiary_address, beneficiary_tokenId, block_timestamp, count-1)
+        let (available_amount, locked_amount)        = aggregatedAmount(beneficiary_address, beneficiary_tokenId, block_timestamp, count-1)
         
         let (available_amount, locked_amount)        = weightMembership(beneficiary_address, beneficiary_tokenId, available_amount, locked_amount)
         

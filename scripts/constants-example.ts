@@ -1,6 +1,7 @@
 /** 15 min */
 export const TIMEOUT = 900_000;
 export const ETH_WEI = 10n ** 18n
+export const WEIGHT_BASE = 1000000000000
 
 /** DEVNET **/
 // export const FEE = BigInt('0'.replace(/,/g, '')) * ETH_WEI

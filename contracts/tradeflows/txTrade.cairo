@@ -403,14 +403,18 @@ func init{
         agreementTerms_len: felt,
         agreementTerms: felt*,
         tokens_len: felt,
-        tokens: felt*
+        tokens: felt*,
+        members_len: felt,
+        members: felt*,
+        weights_len: felt,
+        weights: felt*
     ) -> (
         tokenId: Uint256
     ):
     alloc_locals
     ReentrancyGuard._start()
     let (caller_address)    = get_caller_address()
-    let (tokenId)           = Trade.init(counterpart)    
+    let (tokenId)           = Trade.init(counterpart, members_len, members, weights_len, weights)    
     
     ERC721_Enumerable._mint(caller_address, tokenId)
     Trade.setAgreementTerms(tokenId, agreementTerms_len, agreementTerms)

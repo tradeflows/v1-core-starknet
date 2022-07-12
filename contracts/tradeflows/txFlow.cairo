@@ -39,7 +39,7 @@ func constructor{
         baseToken: felt
     ):
 
-    Flow.set_base_token(baseToken)
+    Flow.setBaseToken(baseToken)
     
     let (decimals) = IERC20.decimals(contract_address=baseToken)
     ERC20.initializer(name, symbol, decimals)
@@ -122,7 +122,7 @@ func balanceOf{
     let tokenId                                 = Uint256(0,0)
 
     if account == contract_address:
-        let (locked_amount, _)                  = Flow.locked_amount_out(contract_address)
+        let (locked_amount, _)                  = Flow.lockedAmountOut(contract_address)
 
         return (locked_amount)
     else:
@@ -130,7 +130,7 @@ func balanceOf{
         let (block_timestamp)                   = get_block_timestamp()
         let (count)                             = FLOW_in_count.read(beneficiary=account, tokenId=tokenId)
 
-        let (available_amount, locked_amount)   = Flow.aggregated_amount(account, tokenId, block_timestamp, count)
+        let (available_amount, locked_amount)   = Flow.aggregatedAmount(account, tokenId, block_timestamp, count)
 
         let (res)                               = SafeUint256.add(available_amount, balance)        
         return (res)
@@ -156,7 +156,7 @@ func balanceOfNFT{
     let (contract_address)                      = get_contract_address()
 
     if account == contract_address:
-        let (locked_amount, _)                  = Flow.locked_amount_out(contract_address)
+        let (locked_amount, _)                  = Flow.lockedAmountOut(contract_address)
 
         return (locked_amount)
     else:
@@ -164,7 +164,7 @@ func balanceOfNFT{
         let (block_timestamp)                   = get_block_timestamp()
         let (count)                             = FLOW_in_count.read(beneficiary=account, tokenId=tokenId)
 
-        let (available_amount, locked_amount)   = Flow.aggregated_amount(account, tokenId, block_timestamp, count)
+        let (available_amount, locked_amount)   = Flow.aggregatedAmount(account, tokenId, block_timestamp, count)
         
         let (res) = SafeUint256.add(available_amount, balance)        
         return (res)
@@ -366,7 +366,7 @@ func withdrawAmount{
 
     let (caller) = get_caller_address()
 
-    let (available_amount, locked_amount, block_timestamp) = Flow.get_withdraw_amount(beneficiary_address, tokenId, caller)
+    let (available_amount, locked_amount, block_timestamp) = Flow.getWithdrawAmount(beneficiary_address, tokenId, caller)
     return (available_amount=available_amount, locked_amount=locked_amount, block_timestamp=block_timestamp)
 end
 
@@ -386,7 +386,7 @@ func withdrawAmountNFT{
     ):
 
     let (caller) = get_caller_address()
-    let (available_amount, locked_amount, block_timestamp) = Flow.get_withdraw_amount(beneficiary_address, beneficiary_tokenId, caller)
+    let (available_amount, locked_amount, block_timestamp) = Flow.getWithdrawAmount(beneficiary_address, beneficiary_tokenId, caller)
     return (available_amount=available_amount, locked_amount=locked_amount, block_timestamp=block_timestamp)
 end
 
@@ -403,7 +403,7 @@ func lockedOut{
         block_timestamp: felt
     ):
     
-    let (locked_amount, block_timestamp) = Flow.locked_amount_out(payer_address)
+    let (locked_amount, block_timestamp) = Flow.lockedAmountOut(payer_address)
     return (locked_amount=locked_amount, block_timestamp=block_timestamp)
 end
 
@@ -422,7 +422,7 @@ func countIn{
 
     # let tokenId = Uint256(0,0)
 
-    let (count) = Flow.maturity_stream_count_in(beneficiary_address, beneficiary_tokenId)
+    let (count) = Flow.maturityStreamCountIn(beneficiary_address, beneficiary_tokenId)
     return (count=count)
 end
 
@@ -438,7 +438,7 @@ func countOut{
         count: felt
     ):
 
-    let (count) = Flow.maturity_stream_count_out(payer_address)
+    let (count) = Flow.maturityStreamCountOut(payer_address)
     return (count=count)
 end
 
@@ -462,7 +462,7 @@ func streamIn{
         maturity_time: felt
     ):
 
-    let (from_address, amount, initial_amount, last_withdraw, start_time, last_reset_time, maturity_time) = Flow.stream_in(beneficiary_address, beneficiary_tokenId, idx)
+    let (from_address, amount, initial_amount, last_withdraw, start_time, last_reset_time, maturity_time) = Flow.streamIn(beneficiary_address, beneficiary_tokenId, idx)
     return (from_address=from_address, amount=amount, initial_amount=initial_amount, last_withdraw=last_withdraw, start_time=start_time, last_reset_time=last_reset_time, maturity_time=maturity_time)
 end
 
@@ -485,7 +485,7 @@ func streamOut{
         last_reset_time: felt, 
         maturity_time: felt
     ):
-    let (from_address, amount, initial_amount, last_withdraw, start_time, last_reset_time, maturity_time) = Flow.stream_out(beneficiary_address, beneficiary_tokenId, idx)
+    let (from_address, amount, initial_amount, last_withdraw, start_time, last_reset_time, maturity_time) = Flow.streamOut(beneficiary_address, beneficiary_tokenId, idx)
     return (from_address=from_address, amount=amount, initial_amount=initial_amount, last_withdraw=last_withdraw, start_time=start_time, last_reset_time=last_reset_time, maturity_time=maturity_time)
 end
 
@@ -579,7 +579,7 @@ func addMaturityStream{
         assert_not_equal(payer_address, contract_address)
     end 
 
-    let (caller_address)    = Flow.add_maturity_stream(beneficiary_address, beneficiary_tokenId, target_amount, initial_amount, start, maturity, FALSE)
+    let (caller_address)    = Flow.addMaturityStream(beneficiary_address, beneficiary_tokenId, target_amount, initial_amount, start, maturity, FALSE)
     ReentrancyGuard._end()
     return (caller_address=caller_address)
 end
@@ -609,7 +609,7 @@ func addNFTMaturityStream{
         assert_not_equal(payer_address, contract_address)
     end 
 
-    let (caller_address) = Flow.add_maturity_stream(beneficiary_address, beneficiary_tokenId, target_amount, initial_amount, start, maturity, TRUE)
+    let (caller_address) = Flow.addMaturityStream(beneficiary_address, beneficiary_tokenId, target_amount, initial_amount, start, maturity, TRUE)
     ReentrancyGuard._end()
     return (caller_address=caller_address)
 end
@@ -627,7 +627,7 @@ func increaseAmount{
         amount: Uint256
     ) -> ():
     ReentrancyGuard._start()
-    Flow.increase_amount(beneficiary_address, beneficiary_tokenId, id, amount)
+    Flow.increaseAmount(beneficiary_address, beneficiary_tokenId, id, amount)
     ReentrancyGuard._end()
     return ()
 end
@@ -645,7 +645,7 @@ func decreaseAmount{
         amount: Uint256
     ) -> ():
     ReentrancyGuard._start()
-    Flow.decrease_amount(beneficiary_address, beneficiary_tokenId, id, amount)
+    Flow.decreaseAmount(beneficiary_address, beneficiary_tokenId, id, amount)
     ReentrancyGuard._end()
     return ()
 end
@@ -660,7 +660,7 @@ func depositBase{
         amount: Uint256
     ) -> ():
     ReentrancyGuard._end()
-    Flow.deposit_base(amount)
+    Flow.depositBase(amount)
     ReentrancyGuard._end()
     return ()
 end
@@ -675,7 +675,7 @@ func withdrawBase{
         amount: Uint256
     ) -> ():
     ReentrancyGuard._start()
-    Flow.withdray_base(amount)
+    Flow.withdrawBase(amount)
     ReentrancyGuard._end()
     return ()
 end

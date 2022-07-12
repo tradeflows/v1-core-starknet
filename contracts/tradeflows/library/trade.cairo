@@ -152,7 +152,11 @@ namespace Trade:
             syscall_ptr: felt*, 
             range_check_ptr
         }(
-            counterpart: felt
+            counterpart: felt,
+            members_len: felt,
+            members: felt*,
+            weights_len: felt,
+            weights: felt*
         ) -> (
             tokenId: Uint256
         ):
@@ -173,11 +177,20 @@ namespace Trade:
         let new_count          = t_count + 1
         TRADE_trade_count.write(counterpart, new_count)
 
-        let (local addrs_value) = alloc()
-        assert [addrs_value] = caller_address
-        let (local wgts_value) = alloc()
-        assert [wgts_value] = _weight_base
-        setWeights(tokenId, 1, addrs_value, 1, wgts_value)
+
+        with_attr error_message("members_len must equal to weights_len"):
+            assert members_len = weights_len
+        end
+
+        if members_len == 0:
+            let (local addrs_value) = alloc()
+            assert [addrs_value] = caller_address
+            let (local wgts_value) = alloc()
+            assert [wgts_value] = _weight_base
+            setWeights(tokenId, 1, addrs_value, 1, wgts_value)
+        else:
+            setWeights(tokenId, members_len, members, weights_len, weights)
+        end
         
         init_called.emit(tokenId, caller_address, counterpart)
         
