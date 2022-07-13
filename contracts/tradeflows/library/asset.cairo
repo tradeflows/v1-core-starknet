@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows Trade library for Cairo v0.1.1 (traflows/library/trade.cairo)
+# TradeFlows Trade library for Cairo v0.1.1 (traflows/library/asset.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  
@@ -57,7 +57,7 @@ from tradeflows.interfaces.ItxDharma import ItxDharma
 # Trade functionality
 #
 
-# Event a trade has been initiated
+# Event a asset has been initiated
 @event
 func init_called(tokenId: Uint256, owner: felt, counterpart: felt):
 end
@@ -99,12 +99,12 @@ end
 
 # Storage of the terms (array) of an agreement
 @storage_var
-func agreements_terms(tokenId : Uint256, index : felt) -> (res : felt):
+func assets_meta(tokenId : Uint256, index : felt) -> (res : felt):
 end
 
 # Storage of the length of the terms array of an agreement 
 @storage_var
-func agreements_terms_len(tokenId : Uint256) -> (res : felt):
+func assets_meta_len(tokenId : Uint256) -> (res : felt):
 end
 
 # Storage fees per token / currency
@@ -112,19 +112,19 @@ end
 func ASSET_fees(address: felt) -> (fee: Uint256):
 end
 
-# Storage of the state of fees being paid for a specific trade
+# Storage of the state of fees being paid for a specific asset
 @storage_var
 func ASSET_paid_fees(tokenId: Uint256, address: felt) -> (success: felt):
 end
 
-# Storage of the counter of the number of trades per address
+# Storage of the counter of the number of assets per address
 @storage_var
-func ASSET_trade_count(address: felt) -> (count: felt):
+func ASSET_asset_count(address: felt) -> (count: felt):
 end
 
 # Storage of the tokenId given an address and an index
 @storage_var
-func ASSET_trade_idx(address: felt, idx: felt) -> (tokenId: Uint256):
+func ASSET_asset_idx(address: felt, idx: felt) -> (tokenId: Uint256):
 end
 
 # Storage of the member addresses (array) of an agreement
@@ -146,7 +146,7 @@ const _weight_base = 1000000000000
 
 namespace Asset:
 
-    # init a trade
+    # init a asset
     func init{
             pedersen_ptr: HashBuiltin*, 
             syscall_ptr: felt*, 
@@ -171,11 +171,11 @@ namespace Asset:
         agreements_provider.write(tokenId, caller_address)
         agreements_counterpart.write(tokenId, counterpart)
 
-        let (t_count)          = ASSET_trade_count.read(counterpart)
+        let (t_count)          = ASSET_asset_count.read(counterpart)
         
-        ASSET_trade_idx.write(counterpart, t_count, tokenId)
+        ASSET_asset_idx.write(counterpart, t_count, tokenId)
         let new_count          = t_count + 1
-        ASSET_trade_count.write(counterpart, new_count)
+        ASSET_asset_count.write(counterpart, new_count)
 
 
         with_attr error_message("members_len must equal to weights_len"):
@@ -197,7 +197,7 @@ namespace Asset:
         return (tokenId=tokenId)
     end
 
-    # init agree to a trade
+    # init agree to a asset
     func agree{
             pedersen_ptr: HashBuiltin*, 
             syscall_ptr: felt*, 
@@ -232,7 +232,7 @@ namespace Asset:
         return ()
     end
 
-    # check if trade has been agreed
+    # check if asset has been agreed
     func isAgreed{
             pedersen_ptr: HashBuiltin*, 
             syscall_ptr: felt*, 
@@ -311,7 +311,7 @@ namespace Asset:
         return(address=address)
     end
 
-    # rate a given address and trade (tokenId)
+    # rate a given address and asset (tokenId)
     func rate{
             pedersen_ptr: HashBuiltin*, 
             syscall_ptr: felt*, 
@@ -374,7 +374,7 @@ namespace Asset:
     end
 
     # get agreement terms
-    func agreementTerms{
+    func assetMeta{
             syscall_ptr : felt*, 
             pedersen_ptr : HashBuiltin*, 
             range_check_ptr
@@ -397,7 +397,7 @@ namespace Asset:
             assert exists = TRUE
         end
 
-        let (local agreement_terms_len) = agreements_terms_len.read(tokenId)
+        let (local agreement_terms_len) = assets_meta_len.read(tokenId)
 
         let (local agreement_terms_value) = alloc()
 
@@ -406,8 +406,8 @@ namespace Asset:
         return (agreement_terms_len, agreement_terms_value)
     end
 
-    # set agreement terms
-    func setAgreementTerms{
+    # set meta
+    func setMeta{
             syscall_ptr : felt*, 
             pedersen_ptr : HashBuiltin*, 
             range_check_ptr
@@ -424,7 +424,7 @@ namespace Asset:
         end
 
         _set_terms(tokenId, agreement_terms_len, agreement_terms)
-        agreements_terms_len.write(tokenId, agreement_terms_len)
+        assets_meta_len.write(tokenId, agreement_terms_len)
         return ()
     end
 
@@ -441,7 +441,7 @@ namespace Asset:
             uint256_check(tokenId)
         end
 
-        setAgreementTerms(tokenId, 0, &[0])
+        setMeta(tokenId, 0, &[0])
         return ()
     end
 
@@ -460,7 +460,7 @@ namespace Asset:
             return ()
         end
 
-        let (agreement_terms_value_at_index) = agreements_terms.read(tokenId, agreement_terms_len)
+        let (agreement_terms_value_at_index) = assets_meta.read(tokenId, agreement_terms_len)
         assert [agreement_terms] = agreement_terms_value_at_index
         _agreement_terms(tokenId, agreement_terms_len - 1, agreement_terms + 1)
         return ()
@@ -481,7 +481,7 @@ namespace Asset:
             return ()
         end
 
-        agreements_terms.write(tokenId, agreement_terms_len, [agreement_terms])
+        assets_meta.write(tokenId, agreement_terms_len, [agreement_terms])
         _set_terms(tokenId, agreement_terms_len - 1, agreement_terms + 1)
         return ()
     end

@@ -24,7 +24,7 @@ from openzeppelin.token.erc721.library import ERC721
 from openzeppelin.introspection.ERC165 import ERC165
 from openzeppelin.access.ownable import Ownable
 
-from tradeflows.library.asset import Asset, ASSET_trade_count, ASSET_trade_idx, ASSET_fees, ASSET_paid_fees
+from tradeflows.library.asset import Asset, ASSET_asset_count, ASSET_asset_idx, ASSET_fees, ASSET_paid_fees
 
 #
 # Constructor
@@ -274,7 +274,7 @@ end
 # Getters
 #
 
-# check if trade has been agreed
+# check if asset has been agreed
 @view
 func isAgreed{
         syscall_ptr : felt*, 
@@ -293,9 +293,9 @@ func isAgreed{
     return (agreed=agreed, timestamp=timestamp, counterpart=counterpart)
 end
 
-# number of trade of an address
+# number of asset of an address
 @view
-func tradeCount{
+func assetCount{
         syscall_ptr : felt*, 
         pedersen_ptr : HashBuiltin*,
         range_check_ptr
@@ -305,14 +305,14 @@ func tradeCount{
         count: felt
     ):
 
-    let (count) = ASSET_trade_count.read(counterpart)
+    let (count) = ASSET_asset_count.read(counterpart)
     
     return (count=count)
 end
 
 # get tokenId for a specific counterpart and index
 @view
-func tradeId{
+func assetId{
         syscall_ptr : felt*, 
         pedersen_ptr : HashBuiltin*,
         range_check_ptr
@@ -323,12 +323,12 @@ func tradeId{
         tokenId: Uint256
     ):
 
-    let (tokenId) = ASSET_trade_idx.read(counterpart, idx)
+    let (tokenId) = ASSET_asset_idx.read(counterpart, idx)
     
     return (tokenId=tokenId)
 end
 
-# check if a payment flow can be added to the trade
+# check if a payment flow can be added to the asset
 @view
 func canAddPayment{
         syscall_ptr: felt*, 
@@ -354,7 +354,7 @@ func canAddPayment{
     return (ok)
 end
 
-# check if a payment flow can be added to the trade
+# check if a payment flow can be added to the asset
 @view
 func memberWeight{
         syscall_ptr: felt*, 
@@ -374,7 +374,7 @@ end
 
 # get the agreement terms
 @view
-func agreementTerms{
+func assetMeta{
         syscall_ptr: felt*, 
         pedersen_ptr: HashBuiltin*, 
         range_check_ptr
@@ -384,7 +384,7 @@ func agreementTerms{
         agreement_terms_len : felt, 
         agreement_terms : felt*
     ):
-    let (agreement_terms_len: felt, agreement_terms: felt*) = Asset.agreementTerms(tokenId)
+    let (agreement_terms_len: felt, agreement_terms: felt*) = Asset.assetMeta(tokenId)
     return (agreement_terms_len=agreement_terms_len, agreement_terms=agreement_terms)
 end
 
@@ -392,7 +392,7 @@ end
 # Externals
 #
 
-# initialize a trade
+# initialize an asset
 @external
 func init{
         pedersen_ptr: HashBuiltin*, 
@@ -400,8 +400,8 @@ func init{
         range_check_ptr
     }(
         counterpart: felt,
-        agreementTerms_len: felt,
-        agreementTerms: felt*,
+        meta_len: felt,
+        meta: felt*,
         tokens_len: felt,
         tokens: felt*,
         members_len: felt,
@@ -417,13 +417,13 @@ func init{
     let (tokenId)           = Asset.init(counterpart, members_len, members, weights_len, weights)    
     
     ERC721_Enumerable._mint(caller_address, tokenId)
-    Asset.setAgreementTerms(tokenId, agreementTerms_len, agreementTerms)
+    Asset.setMeta(tokenId, meta_len, meta)
     Asset.chargeFee(tokenId=tokenId, tokens_len=tokens_len, tokens=tokens)
     ReentrancyGuard._end()
     return (tokenId=tokenId)
 end
 
-# agree to a trade
+# agree to an asset
 @external
 func agree{
         pedersen_ptr: HashBuiltin*, 
@@ -438,7 +438,7 @@ func agree{
     return ()
 end
 
-# rate a given address and trade (tokenId)
+# rate a given address and asset (tokenId)
 @external
 func rate{
         pedersen_ptr: HashBuiltin*, 

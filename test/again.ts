@@ -154,7 +154,7 @@ describe("Run Workflow Again", function () {
         "init", 
         { 
           counterpart: account0.starknetContract.address, 
-          agreementTerms: strToFeltArr(JSON.stringify(tradeInfo)),
+          meta: strToFeltArr(JSON.stringify(tradeInfo)),
           tokens: [txFlowContract.address],
           members: [account1.starknetContract.address],
           weights: [WEIGHT_BASE]
