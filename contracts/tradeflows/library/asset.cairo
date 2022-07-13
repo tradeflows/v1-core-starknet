@@ -373,7 +373,7 @@ namespace Asset:
         return ()
     end
 
-    # get agreement terms
+    # get meta
     func assetMeta{
             syscall_ptr : felt*, 
             pedersen_ptr : HashBuiltin*, 
@@ -401,7 +401,7 @@ namespace Asset:
 
         let (local agreement_terms_value) = alloc()
 
-        _agreement_terms(tokenId, agreement_terms_len, agreement_terms_value)
+        _asset_meta(tokenId, agreement_terms_len, agreement_terms_value)
 
         return (agreement_terms_len, agreement_terms_value)
     end
@@ -423,13 +423,13 @@ namespace Asset:
             assert exists = TRUE
         end
 
-        _set_terms(tokenId, agreement_terms_len, agreement_terms)
+        _set_asset_meta(tokenId, agreement_terms_len, agreement_terms)
         assets_meta_len.write(tokenId, agreement_terms_len)
         return ()
     end
 
     # reset agreement terms
-    func resetAgreementsTerms{
+    func resetMeta{
             syscall_ptr : felt*, 
             pedersen_ptr : HashBuiltin*, 
             range_check_ptr
@@ -446,7 +446,7 @@ namespace Asset:
     end
 
     # helper: get agreement terms
-    func _agreement_terms{
+    func _asset_meta{
             syscall_ptr : felt*, 
             pedersen_ptr : HashBuiltin*, 
             range_check_ptr
@@ -462,12 +462,12 @@ namespace Asset:
 
         let (agreement_terms_value_at_index) = assets_meta.read(tokenId, agreement_terms_len)
         assert [agreement_terms] = agreement_terms_value_at_index
-        _agreement_terms(tokenId, agreement_terms_len - 1, agreement_terms + 1)
+        _asset_meta(tokenId, agreement_terms_len - 1, agreement_terms + 1)
         return ()
     end
 
     # helper: set agreement terms
-    func _set_terms{
+    func _set_asset_meta{
             syscall_ptr : felt*, 
             pedersen_ptr : HashBuiltin*, 
             range_check_ptr
@@ -482,7 +482,7 @@ namespace Asset:
         end
 
         assets_meta.write(tokenId, agreement_terms_len, [agreement_terms])
-        _set_terms(tokenId, agreement_terms_len - 1, agreement_terms + 1)
+        _set_asset_meta(tokenId, agreement_terms_len - 1, agreement_terms + 1)
         return ()
     end
 
