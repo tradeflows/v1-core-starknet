@@ -1,6 +1,6 @@
 import { starknet } from "hardhat";
 import { StarknetContract, StarknetContractFactory, Account } from "hardhat/types/runtime";
-import { TIMEOUT, walletAddress0, walletPrivate0, walletAddress1, walletPrivate1, txDharmaContractAddress, txFlowContractAddress, txTradeContractAddress } from "../scripts/constants";
+import { TIMEOUT, walletAddress0, walletPrivate0, walletAddress1, walletPrivate1, txDharmaContractAddress, txFlowContractAddress, txAssetContractAddress } from "../scripts/constants";
 import { toUint256WithFelts } from "../scripts/starknetUtils"
 
 describe("Trade Data", function () {
@@ -8,8 +8,8 @@ describe("Trade Data", function () {
 
   let txFlowContractFactory: StarknetContractFactory;
   let txFlowContract: StarknetContract;
-  let txTradeContractFactory: StarknetContractFactory;
-  let txTradeContract: StarknetContract;
+  let txAssetContractFactory: StarknetContractFactory;
+  let txAssetContract: StarknetContract;
   let txDharmaContractFactory: StarknetContractFactory;
   let txDharmaContract: StarknetContract;
   
@@ -30,15 +30,15 @@ describe("Trade Data", function () {
 
     txFlowContractFactory = await starknet.getContractFactory('tradeflows/txFlow')
     txDharmaContractFactory = await starknet.getContractFactory('tradeflows/txDharma')
-    txTradeContractFactory = await starknet.getContractFactory('tradeflows/txTrade')
+    txAssetContractFactory = await starknet.getContractFactory('tradeflows/txAsset')
     
     txFlowContract = await txFlowContractFactory.getContractAt(txFlowContractAddress)
     txDharmaContract = await txDharmaContractFactory.getContractAt(txDharmaContractAddress)
-    txTradeContract = await txTradeContractFactory.getContractAt(txTradeContractAddress)
+    txAssetContract = await txAssetContractFactory.getContractAt(txAssetContractAddress)
 
     console.log("txFlow: ", txFlowContract.address)
     console.log("txDharma: ", txDharmaContract.address)
-    console.log("txTrade: ", txTradeContract.address)
+    console.log("txAsset: ", txAssetContract.address)
   })
 
   let countIn = 0
@@ -47,7 +47,7 @@ describe("Trade Data", function () {
     const {count: count} = await account0.call(
       txFlowContract, "countIn",
       { 
-        beneficiary_address: txTradeContract.address, 
+        beneficiary_address: txAssetContract.address, 
         beneficiary_tokenId: tokenId
       })
 
@@ -61,7 +61,7 @@ describe("Trade Data", function () {
       const data = await account0.call(
         txFlowContract, "streamIn",
         { 
-          beneficiary_address: txTradeContract.address, 
+          beneficiary_address: txAssetContract.address, 
           beneficiary_tokenId: tokenId,
           idx: i
         })

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows Trade ERC721 Contracts for Cairo v0.1.1 (traflows/txTrade.cairo)
+# TradeFlows Trade ERC721 Contracts for Cairo v0.1.1 (traflows/txAsset.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  
@@ -24,7 +24,7 @@ from openzeppelin.token.erc721.library import ERC721
 from openzeppelin.introspection.ERC165 import ERC165
 from openzeppelin.access.ownable import Ownable
 
-from tradeflows.library.trade import Trade, TRADE_trade_count, TRADE_trade_idx, TRADE_fees, TRADE_paid_fees
+from tradeflows.library.asset import Asset, ASSET_trade_count, ASSET_trade_idx, ASSET_fees, ASSET_paid_fees
 
 #
 # Constructor
@@ -46,8 +46,8 @@ func constructor{
     ERC721_Enumerable.initializer()
     Ownable.initializer(owner)
 
-    Trade.setTxDharma(txDharma_address)
-    Trade.setDAO(dao_address)
+    Asset.setTxDharma(txDharma_address)
+    Asset.setDAO(dao_address)
     return ()
 end
 
@@ -288,7 +288,7 @@ func isAgreed{
         counterpart: felt
     ):
 
-    let (agreed, timestamp, counterpart) = Trade.isAgreed(tokenId)
+    let (agreed, timestamp, counterpart) = Asset.isAgreed(tokenId)
 
     return (agreed=agreed, timestamp=timestamp, counterpart=counterpart)
 end
@@ -305,7 +305,7 @@ func tradeCount{
         count: felt
     ):
 
-    let (count) = TRADE_trade_count.read(counterpart)
+    let (count) = ASSET_trade_count.read(counterpart)
     
     return (count=count)
 end
@@ -323,7 +323,7 @@ func tradeId{
         tokenId: Uint256
     ):
 
-    let (tokenId) = TRADE_trade_idx.read(counterpart, idx)
+    let (tokenId) = ASSET_trade_idx.read(counterpart, idx)
     
     return (tokenId=tokenId)
 end
@@ -342,11 +342,11 @@ func canAddPayment{
     ):
 
     with_attr error_message("fee has not been paid"):
-        let (ok)  = TRADE_paid_fees.read(tokenId, tokenAddress)
+        let (ok)  = ASSET_paid_fees.read(tokenId, tokenAddress)
     end
 
     with_attr error_message("fee has not been paid"):
-        let (agreed, timestamp, counterpart) = Trade.isAgreed(tokenId)
+        let (agreed, timestamp, counterpart) = Asset.isAgreed(tokenId)
 
         assert agreed = TRUE
     end
@@ -368,7 +368,7 @@ func memberWeight{
         weight_base: felt
     ):
     
-    let (weight, weight_base) = Trade.getWeight(tokenId=tokenId, address=address)
+    let (weight, weight_base) = Asset.getWeight(tokenId=tokenId, address=address)
     return (weight=weight, weight_base=weight_base)
 end
 
@@ -384,7 +384,7 @@ func agreementTerms{
         agreement_terms_len : felt, 
         agreement_terms : felt*
     ):
-    let (agreement_terms_len: felt, agreement_terms: felt*) = Trade.agreementTerms(tokenId)
+    let (agreement_terms_len: felt, agreement_terms: felt*) = Asset.agreementTerms(tokenId)
     return (agreement_terms_len=agreement_terms_len, agreement_terms=agreement_terms)
 end
 
@@ -414,11 +414,11 @@ func init{
     alloc_locals
     ReentrancyGuard._start()
     let (caller_address)    = get_caller_address()
-    let (tokenId)           = Trade.init(counterpart, members_len, members, weights_len, weights)    
+    let (tokenId)           = Asset.init(counterpart, members_len, members, weights_len, weights)    
     
     ERC721_Enumerable._mint(caller_address, tokenId)
-    Trade.setAgreementTerms(tokenId, agreementTerms_len, agreementTerms)
-    Trade.chargeFee(tokenId=tokenId, tokens_len=tokens_len, tokens=tokens)
+    Asset.setAgreementTerms(tokenId, agreementTerms_len, agreementTerms)
+    Asset.chargeFee(tokenId=tokenId, tokens_len=tokens_len, tokens=tokens)
     ReentrancyGuard._end()
     return (tokenId=tokenId)
 end
@@ -433,7 +433,7 @@ func agree{
         tokenId: Uint256
     ):
     ReentrancyGuard._start()
-    Trade.agree(tokenId)
+    Asset.agree(tokenId)
     ReentrancyGuard._end()
     return ()
 end
@@ -449,7 +449,7 @@ func rate{
         rating:  Uint256
     ):
     ReentrancyGuard._start()
-    Trade.rate(tokenId, rating)
+    Asset.rate(tokenId, rating)
     ReentrancyGuard._end()
     return ()
 end
@@ -465,7 +465,7 @@ func setFee{
         amount: Uint256
     ) -> ():
     ReentrancyGuard._start()
-    TRADE_fees.write(tokenAddress, amount)
+    ASSET_fees.write(tokenAddress, amount)
     ReentrancyGuard._end()
     return ()
 end

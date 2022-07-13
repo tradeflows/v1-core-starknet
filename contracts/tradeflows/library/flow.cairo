@@ -43,7 +43,7 @@ from openzeppelin.token.erc20.interfaces.IERC20 import IERC20
 from openzeppelin.security.safemath import SafeUint256
 from openzeppelin.access.ownable import Ownable
 
-from tradeflows.interfaces.ItxTrade import ItxTrade
+from tradeflows.interfaces.ItxAsset import ItxAsset
 
 # Maturity Stream 
 struct MaturityStreamStructure:
@@ -267,7 +267,7 @@ namespace Flow:
         let (allowance)         = ERC20.allowance(payer_address, contract_address)
 
         with_attr error_message("fee not paid by trade owner"):
-            let (ok) = ItxTrade.canAddPayment(contract_address=beneficiary_address, tokenId=beneficiary_tokenId, tokenAddress=contract_address)
+            let (ok) = ItxAsset.canAddPayment(contract_address=beneficiary_address, tokenId=beneficiary_tokenId, tokenAddress=contract_address)
             assert ok = TRUE
         end
 
@@ -823,7 +823,7 @@ namespace Flow:
         if caller_address == beneficiary_address:
             return (available_amount, locked_amount)
         else:
-            let (weight, weight_base)                    = ItxTrade.memberWeight(contract_address=beneficiary_address, tokenId=beneficiary_tokenId, address=caller_address)
+            let (weight, weight_base)                    = ItxAsset.memberWeight(contract_address=beneficiary_address, tokenId=beneficiary_tokenId, address=caller_address)
 
             let (available_amount)                       = SafeUint256.mul(available_amount, Uint256(weight,0))
             let (available_amount, _)                     = SafeUint256.div_rem(available_amount, Uint256(weight_base,0))

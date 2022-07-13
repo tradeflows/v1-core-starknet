@@ -109,22 +109,22 @@ end
 
 # Storage fees per token / currency
 @storage_var
-func TRADE_fees(address: felt) -> (fee: Uint256):
+func ASSET_fees(address: felt) -> (fee: Uint256):
 end
 
 # Storage of the state of fees being paid for a specific trade
 @storage_var
-func TRADE_paid_fees(tokenId: Uint256, address: felt) -> (success: felt):
+func ASSET_paid_fees(tokenId: Uint256, address: felt) -> (success: felt):
 end
 
 # Storage of the counter of the number of trades per address
 @storage_var
-func TRADE_trade_count(address: felt) -> (count: felt):
+func ASSET_trade_count(address: felt) -> (count: felt):
 end
 
 # Storage of the tokenId given an address and an index
 @storage_var
-func TRADE_trade_idx(address: felt, idx: felt) -> (tokenId: Uint256):
+func ASSET_trade_idx(address: felt, idx: felt) -> (tokenId: Uint256):
 end
 
 # Storage of the member addresses (array) of an agreement
@@ -144,7 +144,7 @@ end
 
 const _weight_base = 1000000000000
 
-namespace Trade:
+namespace Asset:
 
     # init a trade
     func init{
@@ -171,11 +171,11 @@ namespace Trade:
         agreements_provider.write(tokenId, caller_address)
         agreements_counterpart.write(tokenId, counterpart)
 
-        let (t_count)          = TRADE_trade_count.read(counterpart)
+        let (t_count)          = ASSET_trade_count.read(counterpart)
         
-        TRADE_trade_idx.write(counterpart, t_count, tokenId)
+        ASSET_trade_idx.write(counterpart, t_count, tokenId)
         let new_count          = t_count + 1
-        TRADE_trade_count.write(counterpart, new_count)
+        ASSET_trade_count.write(counterpart, new_count)
 
 
         with_attr error_message("members_len must equal to weights_len"):
@@ -514,7 +514,7 @@ namespace Trade:
         end
 
         with_attr error_message("fee not set"):
-            let (amount)            = TRADE_fees.read(tok)
+            let (amount)            = ASSET_fees.read(tok)
         end
 
         with_attr error_message("amount must be greater than 0"):
@@ -526,7 +526,7 @@ namespace Trade:
         
         IERC20.transferFrom(contract_address=tok, sender=caller_address, recipient=dao, amount=amount)
 
-        TRADE_paid_fees.write(tokenId, tok, 1)
+        ASSET_paid_fees.write(tokenId, tok, 1)
         
         chargeFee(tokenId=tokenId, tokens_len=tokens_len-1,tokens=tokens+1)
 

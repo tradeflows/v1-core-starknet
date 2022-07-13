@@ -11,8 +11,8 @@ describe("Start Workflow", function () {
   let txFlowContractFactory: StarknetContractFactory;
   let txFlowContract: StarknetContract;
   let txFlowContract_no: StarknetContract;
-  let txTradeContractFactory: StarknetContractFactory;
-  let txTradeContract: StarknetContract;
+  let txAssetContractFactory: StarknetContractFactory;
+  let txAssetContract: StarknetContract;
   let txDharmaContractFactory: StarknetContractFactory;
   let txDharmaContract: StarknetContract;
   let daoContractFactory: StarknetContractFactory;
@@ -51,10 +51,10 @@ describe("Start Workflow", function () {
       owner: owner.starknetContract.address
     })
     
-    txTradeContractFactory = await starknet.getContractFactory('tradeflows/txTrade')
-    txTradeContract = await txTradeContractFactory.deploy({
+    txAssetContractFactory = await starknet.getContractFactory('tradeflows/txAsset')
+    txAssetContract = await txAssetContractFactory.deploy({
       name: starknet.shortStringToBigInt('TradeFlows Deal NFT'),
-      symbol: starknet.shortStringToBigInt('txTrade'),
+      symbol: starknet.shortStringToBigInt('txAsset'),
       owner: account0.starknetContract.address,
       txDharma_address: txDharmaContract.address,
       dao_address: daoContract.address
@@ -85,7 +85,7 @@ describe("Start Workflow", function () {
     console.log("USDC: ", erc20Contract.address)
     console.log("txFlow: ", txFlowContract.address)
     console.log("txDharma: ", txDharmaContract.address)
-    console.log("txTrade: ", txTradeContract.address)
+    console.log("txAsset: ", txAssetContract.address)
     console.log("txFlow NO: ", txFlowContract_no.address)
     
   })
@@ -104,7 +104,7 @@ describe("Start Workflow", function () {
 
     const data0 = await account0.call(txFlowContract, "balanceOf", { account: account0.starknetContract.address })
     const data1 = await account0.call(txFlowContract, "balanceOf", { account: account1.starknetContract.address })
-    const datan = await account0.call(txFlowContract, "balanceOfNFT", { account: txTradeContract.address, tokenId: tokenId})
+    const datan = await account0.call(txFlowContract, "balanceOfNFT", { account: txAssetContract.address, tokenId: tokenId})
     const datac = await account0.call(txFlowContract, "balanceOf", { account: txFlowContract.address })
     const datad = await account0.call(txFlowContract, "balanceOf", { account: daoContract.address })
 
@@ -156,12 +156,12 @@ describe("Start Workflow", function () {
       )
   })
 
-  it("set txTrade address", async function() {   
+  it("set txAsset address", async function() {   
     const txHash = await owner.invoke(
         txDharmaContract, 
         "setTradeAddress", 
         { 
-          tradeAddress: txTradeContract.address,
+          tradeAddress: txAssetContract.address,
         },
         { maxFee: FEE}
       )
@@ -180,7 +180,7 @@ describe("Start Workflow", function () {
 
   it("set fee", async function() {   
     const txHash = await account0.invoke(
-      txTradeContract, 
+      txAssetContract, 
         "setFee", 
         { 
           tokenAddress: txFlowContract.address,
@@ -195,7 +195,7 @@ describe("Start Workflow", function () {
 
     const data0 = await account0.call(txFlowContract, "balanceOf", { account: account0.starknetContract.address })
     const data1 = await account0.call(txFlowContract, "balanceOf", { account: account1.starknetContract.address })
-    const datan = await account0.call(txFlowContract, "balanceOfNFT", { account: txTradeContract.address, tokenId: tokenId})
+    const datan = await account0.call(txFlowContract, "balanceOfNFT", { account: txAssetContract.address, tokenId: tokenId})
     const datac = await account0.call(txFlowContract, "balanceOf", { account: txFlowContract.address })
     const datad = await account0.call(txFlowContract, "balanceOf", { account: daoContract.address })
 
@@ -228,7 +228,7 @@ describe("Start Workflow", function () {
     console.log('balance c', bc)
   })
 
-  it("init txTrade", async function() {   
+  it("init txAsset", async function() {   
     let tradeInfo = {
       counterPart: 'John Doe',
       description: 'I hope that a study of very long sentences will arm you with strategies that are almost as diverse as the sentences themselves, such as: starting each clause with the same word, tilting with dependent clauses toward a revelation at the end, padding with parentheticals, showing great latitude toward standard punctuation, rabbit-trailing away from the initial subject, encapsulating an entire life, and lastly, as this sentence is, celebrating the list.',
@@ -260,12 +260,12 @@ describe("Start Workflow", function () {
     await account1.invoke(
       txFlowContract, 
       'approve', 
-      { spender: txTradeContract.address, amount: toUint256WithFelts("5") }, 
+      { spender: txAssetContract.address, amount: toUint256WithFelts("5") }, 
       { maxFee: FEE}
     )
 
     const txHash = await account1.invoke(
-        txTradeContract, 
+        txAssetContract, 
         "init", 
         { 
           counterpart: account0.starknetContract.address, 
@@ -285,7 +285,7 @@ describe("Start Workflow", function () {
   it("agree txDeal correct", async function() {   
     
     const txHash = await account0.invoke(
-        txTradeContract, 
+        txAssetContract, 
         "agree", 
         { 
           tokenId: toUint256WithFelts("0")
@@ -321,7 +321,7 @@ describe("Start Workflow", function () {
     let txHash = await account0.invoke(
           txFlowContract, 
           "addNFTMaturityStream", 
-          { beneficiary_address: txTradeContract.address, beneficiary_tokenId: tokenId, target_amount: target_amount, initial_amount: initial_amount, start: start_unixtime, maturity: maturity_unixtime }, 
+          { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId, target_amount: target_amount, initial_amount: initial_amount, start: start_unixtime, maturity: maturity_unixtime }, 
           { maxFee: FEE}
         )
     
@@ -346,7 +346,7 @@ describe("Start Workflow", function () {
   it("rate counterpart 1", async function() {  
     
     const txHash = await account0.invoke(
-        txTradeContract, 
+        txAssetContract, 
         "rate", 
         { 
           tokenId: toUint256WithFelts("0"),
@@ -359,7 +359,7 @@ describe("Start Workflow", function () {
   it("rate counterpart 2", async function() {   
     
     const txHash = await account1.invoke(
-        txTradeContract, 
+        txAssetContract, 
         "rate", 
         { 
           tokenId: toUint256WithFelts("0"),
@@ -411,7 +411,7 @@ describe("Start Workflow", function () {
 
     const data0 = await account0.call(txFlowContract, "balanceOf", { account: account0.starknetContract.address })
     const data1 = await account0.call(txFlowContract, "balanceOf", { account: account1.starknetContract.address })
-    const datan = await account0.call(txFlowContract, "balanceOfNFT", { account: txTradeContract.address, tokenId: tokenId})
+    const datan = await account0.call(txFlowContract, "balanceOfNFT", { account: txAssetContract.address, tokenId: tokenId})
     const datac = await account0.call(txFlowContract, "balanceOf", { account: txFlowContract.address })
     const datad = await account0.call(txFlowContract, "balanceOf", { account: daoContract.address })
 
@@ -468,7 +468,7 @@ describe("Start Workflow", function () {
       let txHash = await account0.invoke(
           txFlowContract_no, 
           "addNFTMaturityStream", 
-          { beneficiary_address: txTradeContract.address, beneficiary_tokenId: tokenId, target_amount: amount, initial_amount: amount, start: start_unixtime, maturity: maturity_unixtime }, 
+          { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId, target_amount: amount, initial_amount: amount, start: start_unixtime, maturity: maturity_unixtime }, 
           { maxFee: FEE}
         )
       console.log('Tx: ', txHash)
@@ -518,7 +518,7 @@ describe("Start Workflow", function () {
     let txHash = await account0.invoke(
           txFlowContract, 
           "addNFTMaturityStream", 
-          { beneficiary_address: txTradeContract.address, beneficiary_tokenId: tokenId, target_amount: amount, initial_amount: amount, start: start_unixtime, maturity: maturity_unixtime }, 
+          { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId, target_amount: amount, initial_amount: amount, start: start_unixtime, maturity: maturity_unixtime }, 
           { maxFee: FEE}
         )
 
@@ -541,7 +541,7 @@ describe("Start Workflow", function () {
     await account0.invoke(
         txFlowContract, 
         'increaseAmount', 
-        { beneficiary_address: txTradeContract.address, beneficiary_tokenId: tokenId, id: 0, amount: initial_amount }, 
+        { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId, id: 0, amount: initial_amount }, 
         { maxFee: FEE}
       )
   })
@@ -551,7 +551,7 @@ describe("Start Workflow", function () {
 
     const data0 = await account0.call(txFlowContract, "balanceOf", { account: account0.starknetContract.address })
     const data1 = await account0.call(txFlowContract, "balanceOf", { account: account1.starknetContract.address })
-    const datan = await account0.call(txFlowContract, "balanceOfNFT", { account: txTradeContract.address, tokenId: tokenId})
+    const datan = await account0.call(txFlowContract, "balanceOfNFT", { account: txAssetContract.address, tokenId: tokenId})
     const datac = await account0.call(txFlowContract, "balanceOf", { account: txFlowContract.address })
     const datad = await account0.call(txFlowContract, "balanceOf", { account: daoContract.address })
 
@@ -578,7 +578,7 @@ describe("Start Workflow", function () {
 
   it("get correct payment stream", async function() {   
     let tokenId = toUint256WithFelts("0")
-    const amount = await account1.call(txFlowContract, "withdrawAmountNFT", { beneficiary_address: txTradeContract.address, beneficiary_tokenId: tokenId })
+    const amount = await account1.call(txFlowContract, "withdrawAmountNFT", { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId })
     console.log('can withdraw', {available_amount: fromUint256WithFelts(amount.available_amount).toString(), locked_amount: fromUint256WithFelts(amount.locked_amount).toString(), block_timestamp: new Date(Number(amount.block_timestamp) * 1000)})
   })
 
@@ -587,7 +587,7 @@ describe("Start Workflow", function () {
     let txHash = await account1.invoke(
         txFlowContract, 
         "withdrawNFT", 
-        { beneficiary_address: txTradeContract.address, beneficiary_tokenId: tokenId }, 
+        { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId }, 
         { maxFee: FEE}
       )
     console.log('Tx:', txHash)
@@ -600,7 +600,7 @@ describe("Start Workflow", function () {
 
     const data0 = await account0.call(txFlowContract, "balanceOf", { account: account0.starknetContract.address })
     const data1 = await account0.call(txFlowContract, "balanceOf", { account: account1.starknetContract.address })
-    const datan = await account0.call(txFlowContract, "balanceOfNFT", { account: txTradeContract.address, tokenId: tokenId})
+    const datan = await account0.call(txFlowContract, "balanceOfNFT", { account: txAssetContract.address, tokenId: tokenId})
     const datac = await account0.call(txFlowContract, "balanceOf", { account: txFlowContract.address })
     const datad = await account0.call(txFlowContract, "balanceOf", { account: daoContract.address })
 
@@ -625,7 +625,7 @@ describe("Start Workflow", function () {
     let txHash = await account1.invoke(
         txFlowContract, 
         "withdrawNFT", 
-        { beneficiary_address: txTradeContract.address, beneficiary_tokenId: tokenId }, 
+        { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId }, 
         { maxFee: FEE}
       )
 
@@ -639,7 +639,7 @@ describe("Start Workflow", function () {
       let txHash = await account0.invoke(
           txFlowContract, 
           "withdrawNFT", 
-          { beneficiary_address: txTradeContract.address, beneficiary_tokenId: tokenId }, 
+          { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId }, 
           { maxFee: FEE}
         )
       console.log('Tx:', txHash)
@@ -677,7 +677,7 @@ describe("Start Workflow", function () {
 
     const data0 = await account0.call(txFlowContract, "balanceOf", { account: account0.starknetContract.address })
     const data1 = await account0.call(txFlowContract, "balanceOf", { account: account1.starknetContract.address })
-    const datan = await account0.call(txFlowContract, "balanceOfNFT", { account: txTradeContract.address, tokenId: tokenId})
+    const datan = await account0.call(txFlowContract, "balanceOfNFT", { account: txAssetContract.address, tokenId: tokenId})
     const datac = await account0.call(txFlowContract, "balanceOf", { account: txFlowContract.address })
     const datad = await account0.call(txFlowContract, "balanceOf", { account: daoContract.address })
 
@@ -702,7 +702,7 @@ describe("Start Workflow", function () {
   //   await account0.invoke(
   //       txFlowContract, 
   //       'pause', 
-  //       { beneficiary_address: txTradeContract.address, beneficiary_tokenId: tokenId, pause: 1 }, 
+  //       { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId, pause: 1 }, 
   //       { maxFee: FEE}
   //     )
   // })
@@ -713,7 +713,7 @@ describe("Start Workflow", function () {
   //   await account1.invoke(
   //       txFlowContract, 
   //       'pause', 
-  //       { beneficiary_address: txTradeContract.address, beneficiary_tokenId: tokenId, pause: 1 }, 
+  //       { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId, pause: 1 }, 
   //       { maxFee: FEE}
   //     )
   // })
@@ -724,7 +724,7 @@ describe("Start Workflow", function () {
 
     const data0 = await account0.call(txFlowContract, "balanceOf", { account: account0.starknetContract.address })
     const data1 = await account0.call(txFlowContract, "balanceOf", { account: account1.starknetContract.address })
-    const datan = await account0.call(txFlowContract, "balanceOfNFT", { account: txTradeContract.address, tokenId: tokenId})
+    const datan = await account0.call(txFlowContract, "balanceOfNFT", { account: txAssetContract.address, tokenId: tokenId})
     const datac = await account0.call(txFlowContract, "balanceOf", { account: txFlowContract.address })
     const datad = await account0.call(txFlowContract, "balanceOf", { account: daoContract.address })
 
@@ -751,7 +751,7 @@ describe("Start Workflow", function () {
     await account0.invoke(
         txFlowContract, 
         'decreaseAmount', 
-        { beneficiary_address: txTradeContract.address, beneficiary_tokenId: tokenId, id: 0, amount: initial_amount }, 
+        { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId, id: 0, amount: initial_amount }, 
         { maxFee: FEE}
       )
   })
@@ -766,7 +766,7 @@ describe("Start Workflow", function () {
     await account1.invoke(
         txFlowContract, 
         'decreaseAmount', 
-        { beneficiary_address: txTradeContract.address, beneficiary_tokenId: tokenId, id: 0, amount: initial_amount }, 
+        { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId, id: 0, amount: initial_amount }, 
         { maxFee: FEE}
       )
       throw new Error('should have failed')
@@ -776,9 +776,9 @@ describe("Start Workflow", function () {
 
   it("member weight", async function() {   
     let tokenId = toUint256WithFelts("0")
-    const data0 = await account0.call(txTradeContract, "memberWeight", { tokenId: tokenId, address: account0.starknetContract.address })
+    const data0 = await account0.call(txAssetContract, "memberWeight", { tokenId: tokenId, address: account0.starknetContract.address })
     console.log('member weight 0', data0)
-    const data1 = await account0.call(txTradeContract, "memberWeight", { tokenId: tokenId, address: account1.starknetContract.address })
+    const data1 = await account0.call(txAssetContract, "memberWeight", { tokenId: tokenId, address: account1.starknetContract.address })
     console.log('member weight 1', data1)
   })
 
@@ -787,7 +787,7 @@ describe("Start Workflow", function () {
     let txHash = await account1.invoke(
         txFlowContract, 
         "withdrawNFT", 
-        { beneficiary_address: txTradeContract.address, beneficiary_tokenId: tokenId }, 
+        { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId }, 
         { maxFee: FEE}
       )
 
@@ -841,7 +841,7 @@ describe("Start Workflow", function () {
 
     const data0 = await account0.call(txFlowContract, "balanceOf", { account: account0.starknetContract.address })
     const data1 = await account0.call(txFlowContract, "balanceOf", { account: account1.starknetContract.address })
-    const datan = await account0.call(txFlowContract, "balanceOfNFT", { account: txTradeContract.address, tokenId: tokenId})
+    const datan = await account0.call(txFlowContract, "balanceOfNFT", { account: txAssetContract.address, tokenId: tokenId})
     const datac = await account0.call(txFlowContract, "balanceOf", { account: txFlowContract.address })
     const datad = await account0.call(txFlowContract, "balanceOf", { account: daoContract.address })
 

@@ -25,7 +25,7 @@ from openzeppelin.security.safemath import SafeUint256
 from openzeppelin.access.ownable import Ownable
 
 from tradeflows.library.flow import FLOW_in_count, FLOW_base_token, Flow
-from tradeflows.library.trade import Trade
+from tradeflows.library.asset import Asset
 
 
 @constructor

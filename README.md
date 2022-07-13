@@ -28,12 +28,12 @@ Furthermore, current / centralised commercial workflows are:
 These factor have very adverse effects on global supply chains of both goods and services including an increase in the need and cost of financing due to this uncertainty.
 
 Blockchain is able to mitigate all four negative effects using Smart Contracts that enable a sellers to:
-- Describe a trade's conditions and payment terms;
-- Mint an NFT that represents the trade;
-- Allows the buyer to agree to the trade on-chain through custom NFT functionality;
+- Describe an asset's conditions and payment terms;
+- Mint an NFT that represents the asset;
+- Allows the buyer to agree to the asset on-chain through custom NFT functionality;
 - The buyer can then link payment streams to the NFT;
 - Collateralise the payment streams in order to show an availability of funds without losing control over them. The seller knows that as long as the funds are in the self-custody contract, they will only be used to pay the stream;
-- Rate each other while there is a trade alive through a non-transferable ERC20 token. This offers a high social rating with a degree of integrity since it can only be attributed by members whom which a wallet is trading with.
+- Rate each other while there is a asset alive through a non-transferable ERC20 token. This offers a high social rating with a degree of integrity since it can only be attributed by members whom which a wallet is trading with.
 
 
 ## ⚠️ WARNING! ⚠️
@@ -42,9 +42,9 @@ This repo contains highly experimental code. Expect rapid iteration. Use at your
  
 # Architecture
 The protocol is based on three infrastructure Smart Contracts:
-- **DAO**: Custom ERC20 contract that represents the ownership of the DAO. This contract is also the treasury to which all Trade Init / Minting fees go to.
-- **txTrade**: Custom ERC721 contract that stores the terms of the trade as a minted NFT. This contract also contains the functionality that allows the buyer to agree to the trade and the NFT is also the received of the programmed payment stream.
-- **txDharma**: Custom ERC20 contract that is non-transferable and mintable. Community members that are in an active trade are able to mint these tokens to their counerpart's wallets or burn them when attributing a negative score.
+- **DAO**: Custom ERC20 contract that represents the ownership of the DAO. This contract is also the treasury to which all Asset Init / Minting fees go to.
+- **txAsset**: Custom ERC721 contract that stores the terms of an asset as a minted NFT. This contract also contains the functionality that allows the buyer to agree to the asset and the NFT is also the received of the programmed payment stream.
+- **txDharma**: Custom ERC20 contract that is non-transferable and mintable. Community members that are in an active asset are able to mint these tokens to their counerpart's wallets or burn them when attributing a negative score.
 
 and a set of ERC20 wrapper contracts that enable all custom streaming and escrow functionality:
 - **txFlow**: Custom ERC20 contract that wraps around the target token, eg. USDC, and contains the streaming and self-custody functionality. This contract is also extended to attribute a balance to any ERC721 contract.
@@ -52,18 +52,18 @@ and a set of ERC20 wrapper contracts that enable all custom streaming and escrow
 
 # Commercial Workflow
 When starting on a commercial journey, both buyers and sellers engage through the Smart Contract infrastructure in an on-chain dynamic.
-## Minting a Trade
-The first steps are creating a new trade:
+## Minting an Asset
+The first steps are creating a new asset:
 
 1. First both Buyer and Seller deposit ERC20 token (USDC) to the Flow tokens in order to make payments. The Seller pays minting fees and the Buyer pays the commercial fees in flow token.
-2. Seller approves a transfer for each Flow token the trade is linked to for the Trade contract to charge the respective fees.
-3. Seller mints a Trade NFT (_txTrade.init_) returning a tokenID.
+2. Seller approves a transfer for each Flow token the asset is linked to for the Asset contract to charge the respective fees.
+3. Seller mints a Asset NFT (_txAsset.init_) returning a tokenID.
 4. Seller communicates the tokenID to the Buyer.
-5. Buyer agrees to the trade (_txTrade.agree_) given the tokenID.
-6. Buyer and Seller can now start to rate each other (_txTrade.rate_) given the tokenId.
-7. Buyer starts adding programmed Flow token cashflows to the trade (_txFlow.addNFTMaturityStream_) given the tokenId.
-8. Service provider is now able to withdraw Flow tokens from the NFT Trade (_txFlow.withdrawAmountNFT_) that are streamed to them as time passes.
-9. Both Service providers and Buyers are able to withdraw trade Flow tokens (_txFlow.withdrawBase_) for the base token (USDC).
+5. Buyer agrees to the asset (_txAsset.agree_) given the tokenID.
+6. Buyer and Seller can now start to rate each other (_txAsset.rate_) given the tokenId.
+7. Buyer starts adding programmed Flow token cashflows to the asset (_txFlow.addNFTMaturityStream_) given the tokenId.
+8. Service provider is now able to withdraw Flow tokens from the NFT Asset (_txFlow.withdrawAmountNFT_) that are streamed to them as time passes.
+9. Both Service providers and Buyers are able to withdraw Flow tokens (_txFlow.withdrawBase_) for the base token (USDC).
 
 # Contracts
 During this alpha phase, we are deploying a set of test contracts to the Goerli Starknet testnet. The production contract will be deployed at a later date on to mainnet.
@@ -75,7 +75,7 @@ All of the contract addresses below will change as we iterate rapidly during the
 | Contract |  Address |
 :-------------------------:|:-------------------------: 
 DAO      | [0x0351172e2bb614d3354c8c5aba22d777f6faeba2b66744f7116e96b79358dac0](https://goerli.voyager.online/contract/0x0351172e2bb614d3354c8c5aba22d777f6faeba2b66744f7116e96b79358dac0)
-txTrade  | [0x04f7ce277a2d81fb20466f07017037e1a9762c308cc86a95f9534c61f3412714](https://goerli.voyager.online/contract/0x04f7ce277a2d81fb20466f07017037e1a9762c308cc86a95f9534c61f3412714)
+txAsset  | [0x04f7ce277a2d81fb20466f07017037e1a9762c308cc86a95f9534c61f3412714](https://goerli.voyager.online/contract/0x04f7ce277a2d81fb20466f07017037e1a9762c308cc86a95f9534c61f3412714)
 txDharma | [0x07d00d72858504a84a1a09a06e60800811c2b8d720474ca420f2fa7bc1b1104a](https://goerli.voyager.online/contract/0x07d00d72858504a84a1a09a06e60800811c2b8d720474ca420f2fa7bc1b1104a)
 
 ## Flows Alpha on Goerli Testnet
@@ -124,11 +124,11 @@ To execute functions in Goerli Testnet you will need ETH which you can get throu
 [StarkNet Faucet](https://faucet.goerli.starknet.io)
 
 ## Deploy
-The smart contracts are divided into two categories. Infrastructure contracts that manage the **DAO**, **Trade** and **Rating** functionality; and the **Flow** wrapper contracts.
+The smart contracts are divided into two categories. Infrastructure contracts that manage the **DAO**, **Asset** and **Rating** functionality; and the **Flow** wrapper contracts.
 
 ### Deploy Infrastructure
 
-Instructure, ie. Trade and Dharma, contract deployment:
+Instructure, ie. Asset and Dharma, contract deployment:
 
     npx hardhat run scripts/deploy-infrastructure.ts
 
@@ -192,10 +192,10 @@ file. Example:
     export const erc20ContractAddress       = '0x02d704491ed20caa95afa45184b7e9c5ecf13e1a079fdbb5b95ea39ca592cf29'
     export const txFlowContractAddress      = '0x0746fffd49369c4bd3f5c970ff9885e0d4d3e6b6c43f2a15efea034dc61735a0'
     export const txDharmaContractAddress    = '0x030260d11b2cd88a410572b3011357857c9fcef9bd431d38c8dc0c47c7fdc835'
-    export const txTradeContractAddress     = '0x05df41f469bf98be75e479385eee571ebedb72f70178fe00f17040f872c0b398'
+    export const txAssetContractAddress     = '0x05df41f469bf98be75e479385eee571ebedb72f70178fe00f17040f872c0b398'
 
 ### Run again
-Then run the next test to ensure that recreating trades and rerunning these operations still works.
+Then run the next test to ensure that recreating assets and rerunning these operations still works.
 
     npx hardhat test test/again.ts
 
