@@ -142,7 +142,10 @@ end
 func weights_len(tokenId : Uint256) -> (res : felt):
 end
 
-const _weight_base = 1000000000000
+# Storage of the base_weight
+@storage_var
+func base_weight(tokenId : Uint256) -> (res : felt):
+end
 
 namespace Asset:
 
@@ -161,22 +164,21 @@ namespace Asset:
             tokenId: Uint256
         ):
         alloc_locals
+        
+        let (caller_address)        = get_caller_address()
 
-        let (caller_address)   = get_caller_address()
-
-        let (tokenId : Uint256)= id_counter.read()
-        let (next_tokenId)     = SafeUint256.add(tokenId, Uint256(1,0))
+        let (tokenId : Uint256)     = id_counter.read()
+        let (next_tokenId)          = SafeUint256.add(tokenId, Uint256(1,0))
         id_counter.write(next_tokenId)
 
         agreements_provider.write(tokenId, caller_address)
         agreements_counterpart.write(tokenId, counterpart)
 
-        let (t_count)          = ASSET_asset_count.read(counterpart)
+        let (t_count)               = ASSET_asset_count.read(counterpart)
         
         ASSET_asset_idx.write(counterpart, t_count, tokenId)
-        let new_count          = t_count + 1
+        let new_count               = t_count + 1
         ASSET_asset_count.write(counterpart, new_count)
-
 
         with_attr error_message("members_len must equal to weights_len"):
             assert members_len = weights_len
@@ -184,17 +186,41 @@ namespace Asset:
 
         if members_len == 0:
             let (local addrs_value) = alloc()
-            assert [addrs_value] = caller_address
-            let (local wgts_value) = alloc()
-            assert [wgts_value] = _weight_base
+            assert [addrs_value]    = caller_address
+            let (local wgts_value)  = alloc()
+            assert [wgts_value]     = 1
             setWeights(tokenId, 1, addrs_value, 1, wgts_value)
+            base_weight.write(tokenId, 1)
         else:
+            let (_wgts)             = sum(weights_len, weights)
+
             setWeights(tokenId, members_len, members, weights_len, weights)
+            base_weight.write(tokenId, _wgts)
         end
-        
+
         init_called.emit(tokenId, caller_address, counterpart)
         
         return (tokenId=tokenId)
+    end
+
+    func sum{
+            pedersen_ptr: HashBuiltin*, 
+            syscall_ptr: felt*, 
+            range_check_ptr
+        }(
+            weights_len: felt,
+            weights: felt*
+        ) -> (
+            res: felt
+        ):
+        
+        if weights_len == 0:
+            return (0)
+        end
+
+        let wgt   = [weights]
+        let (res) = sum(weights_len-1,weights+1)
+        return (res=wgt+res)
     end
 
     # init agree to a asset
@@ -309,6 +335,22 @@ namespace Asset:
         
         let (address) = dao_address.read()
         return(address=address)
+    end
+
+    # get base weight
+    func getBaseWeight{
+            pedersen_ptr: HashBuiltin*, 
+            syscall_ptr: felt*, 
+            range_check_ptr
+        }(
+            tokenId: Uint256
+        ) ->
+        (
+            weight: felt
+        ):
+        
+        let (weight) = base_weight.read(tokenId)
+        return(weight=weight)
     end
 
     # rate a given address and asset (tokenId)
@@ -658,10 +700,13 @@ namespace Asset:
 
 
         let (weight)                    = _get_weight(address, wgts_len, wgts, addrss)
+        let (_weight_base)              = base_weight.read(tokenId)
 
         with_attr error_message("weight cannot be 0"):
             assert_nn(weight)
         end
+
+        
 
         return (weight=weight, weight_base=_weight_base)
     end

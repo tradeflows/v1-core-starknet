@@ -22,5 +22,14 @@ namespace ItxAsset:
 
     func memberWeight(tokenId: Uint256, address: felt) -> (weight: felt, weight_base: felt):
     end
+
+    func baseWeight(tokenId: Uint256) -> (weight_base: felt):
+    end
+
+    func getWeights(tokenId: Uint256) -> (wgts_len : felt, wgts : felt*):
+    end
+
+    func getAddresses(tokenId: Uint256) -> (addrs_len : felt, addrs : felt*):
+    end
 end
 

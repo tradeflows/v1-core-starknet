@@ -123,7 +123,6 @@ func balanceOf{
 
     if account == contract_address:
         let (locked_amount, _)                  = Flow.lockedAmountOut(contract_address)
-
         return (locked_amount)
     else:
 

@@ -372,6 +372,53 @@ func memberWeight{
     return (weight=weight, weight_base=weight_base)
 end
 
+@view
+func baseWeight{
+        syscall_ptr: felt*, 
+        pedersen_ptr: HashBuiltin*, 
+        range_check_ptr
+    }(
+        tokenId: Uint256
+    ) -> (
+        weight: felt
+    ):
+    
+    let (weight) = Asset.getBaseWeight(tokenId)
+    return (weight=weight)
+end
+
+@view
+func getWeights{
+        syscall_ptr: felt*, 
+        pedersen_ptr: HashBuiltin*, 
+        range_check_ptr
+    }(
+        tokenId: Uint256
+    ) -> (
+        wgts_len : felt, 
+        wgts : felt*
+    ):
+    let (wgts_len : felt, wgts : felt*) = Asset.getWeights(tokenId)
+
+    return (wgts_len, wgts)
+end
+
+@view
+func getAddresses{
+        syscall_ptr: felt*, 
+        pedersen_ptr: HashBuiltin*, 
+        range_check_ptr
+    }(
+        tokenId: Uint256
+    ) -> (
+        addrs_len : felt, 
+        addrs : felt*
+    ):
+    let (addrs_len : felt, addrs : felt*) = Asset.getAddresses(tokenId)
+
+    return (addrs_len, addrs)
+end
+
 # get the agreement terms
 @view
 func assetMeta{
