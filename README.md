@@ -72,17 +72,19 @@ During this alpha phase, we are deploying a set of test contracts to the Goerli 
 All of the contract addresses below will change as we iterate rapidly during these initial phases. Please keep a look out for changes in these addresses.
 
 ## Infrastructure Alpha on Goerli Testnet
+Deployment Date: 2022-07-18
 | Contract |  Address |
 :-------------------------:|:-------------------------: 
-DAO      | [0x0351172e2bb614d3354c8c5aba22d777f6faeba2b66744f7116e96b79358dac0](https://goerli.voyager.online/contract/0x0351172e2bb614d3354c8c5aba22d777f6faeba2b66744f7116e96b79358dac0)
-txAsset  | [0x04f7ce277a2d81fb20466f07017037e1a9762c308cc86a95f9534c61f3412714](https://goerli.voyager.online/contract/0x04f7ce277a2d81fb20466f07017037e1a9762c308cc86a95f9534c61f3412714)
-txDharma | [0x07d00d72858504a84a1a09a06e60800811c2b8d720474ca420f2fa7bc1b1104a](https://goerli.voyager.online/contract/0x07d00d72858504a84a1a09a06e60800811c2b8d720474ca420f2fa7bc1b1104a)
+DAO      | [0x051cc37fae579cc5e8d92b451367b3e3a9d135c38bdda1fac01e5ffc8bcc34f5](https://goerli.voyager.online/contract/0x051cc37fae579cc5e8d92b451367b3e3a9d135c38bdda1fac01e5ffc8bcc34f5)
+txAsset  | [0x05b9c2f5c0b79807cc75efceafb5052161421f8f7d3dc2889edf8d22775cf698](https://goerli.voyager.online/contract/0x05b9c2f5c0b79807cc75efceafb5052161421f8f7d3dc2889edf8d22775cf698)
+txDharma | [0x03ad4a2587a8cd9c8bf292a580c7f134cbef216ea2b6582b9ebdc75c2837d8c2](https://goerli.voyager.online/contract/0x03ad4a2587a8cd9c8bf292a580c7f134cbef216ea2b6582b9ebdc75c2837d8c2)
 
 ## Flows Alpha on Goerli Testnet
+Deployment Date: 2022-07-18
 | Contract |  Address |
 :-------------------------:|:-------------------------: 
-ERC20 Test       | [0x039bded9481f5fc7d46185c44655206362a647bb046dd97efcd2524a10bf7ab2](https://goerli.voyager.online/contract/0x039bded9481f5fc7d46185c44655206362a647bb046dd97efcd2524a10bf7ab2)
-ERC20 Test xFlow | [0x002a63a6069e8209ad6bcab1d11d75cead44003aaaccbfad069954e32e533f35](https://goerli.voyager.online/contract/0x002a63a6069e8209ad6bcab1d11d75cead44003aaaccbfad069954e32e533f35)
+ERC20 Test       | [0x032683e2234543d8edccc633bf7a6a0cf36d7f62858323f76018c90c455ea129](https://goerli.voyager.online/contract/0x032683e2234543d8edccc633bf7a6a0cf36d7f62858323f76018c90c455ea129)
+ERC20 Test xFlow | [0x00f5b784c8dfc813cc881ccbe12ffc96135b423f38725691d5bc72524933bf1b](https://goerli.voyager.online/contract/0x00f5b784c8dfc813cc881ccbe12ffc96135b423f38725691d5bc72524933bf1b)
 
 
 # Environment
