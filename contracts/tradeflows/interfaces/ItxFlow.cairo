@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows Dharma Interface for Cairo v0.2.0 (traflows/interfaces/ItxDharma.cairo)
+# TradeFlows Flow Interface for Cairo v0.2.0 (traflows/interfaces/ItxFlow.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  
@@ -16,20 +16,17 @@
 from starkware.cairo.common.uint256 import Uint256
 
 @contract_interface
-namespace ItxAsset:
-    func canAddPayment(tokenId: Uint256, tokenAddress: felt) -> (success: felt):
+namespace ItxFlow:
+    func increaseTokenId(address: felt, tokenId: Uint256, amount : Uint256) -> ():
     end
 
-    func memberWeight(tokenId: Uint256, address: felt) -> (weight: felt, weight_base: felt):
+    func decreaseTokenId(address: felt, tokenId: Uint256, amount : Uint256) -> ():
     end
 
-    func baseWeight(tokenId: Uint256) -> (weight_base: felt):
+    func lockedTokenId(address: felt, tokenId: Uint256) -> (locked_amount: Uint256, block_timestamp: felt):
     end
 
-    func getWeights(tokenId: Uint256) -> (wgts_len : felt, wgts : felt*):
-    end
-
-    func getAddresses(tokenId: Uint256) -> (addrs_len : felt, addrs : felt*):
+    func pauseTokenId(address: felt, tokenId: Uint256, paused: felt) -> ():
     end
 end
 

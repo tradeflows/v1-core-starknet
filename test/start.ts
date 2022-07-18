@@ -10,6 +10,8 @@ describe("Start Workflow", function () {
   let erc20Contract: StarknetContract;
   let txFlowContractFactory: StarknetContractFactory;
   let txFlowContract: StarknetContract;
+  let txEscrowContractFactory: StarknetContractFactory;
+  let txEscrowContract: StarknetContract;
   let txFlowContract_no: StarknetContract;
   let txAssetContractFactory: StarknetContractFactory;
   let txAssetContract: StarknetContract;
@@ -76,17 +78,28 @@ describe("Start Workflow", function () {
     txFlowContract = await txFlowContractFactory.deploy({
       name: starknet.shortStringToBigInt('USDC txFlow'),
       symbol: starknet.shortStringToBigInt('USDCxFlow'),
-      baseToken: erc20Contract.address
+      owner: owner.starknetContract.address,
+      baseToken: erc20Contract.address,
     })
+
+    txEscrowContractFactory = await starknet.getContractFactory('tradeflows/txEscrow')
+    txEscrowContract = await txEscrowContractFactory.deploy({
+      uri: starknet.shortStringToBigInt('USDC txEscrow'),
+      owner: owner.starknetContract.address,
+      baseFlow: txFlowContract.address
+    })
+
     txFlowContract_no = await txFlowContractFactory.deploy({
       name: starknet.shortStringToBigInt('USDC txFlow'),
       symbol: starknet.shortStringToBigInt('USDCxFlow'),
+      owner: owner.starknetContract.address,
       baseToken: erc20Contract.address
     })
     
     console.log("DAO:       ", daoContract.address)
     console.log("USDC:      ", erc20Contract.address)
     console.log("txFlow:    ", txFlowContract.address)
+    console.log("txEscrow:  ", txEscrowContract.address)
     console.log("txDharma:  ", txDharmaContract.address)
     console.log("txAsset:   ", txAssetContract.address)
     console.log("txFlow NO: ", txFlowContract_no.address)
@@ -165,9 +178,20 @@ describe("Start Workflow", function () {
   it("set txAsset address", async function() {   
     const txHash = await owner.invoke(
         txDharmaContract, 
-        "setTradeAddress", 
+        "setAssetAddress", 
         { 
-          tradeAddress: txAssetContract.address,
+          address: txAssetContract.address,
+        },
+        { maxFee: FEE}
+      )
+  })
+
+  it("set txFlow address", async function() {   
+    const txHash = await owner.invoke(
+        txFlowContract, 
+        "setOutFlowAddress", 
+        { 
+          address: txEscrowContract.address,
         },
         { maxFee: FEE}
       )
@@ -319,7 +343,7 @@ describe("Start Workflow", function () {
 
   it("add payment stream 1", async function() {   
     const target_amount = toUint256WithFelts((BigInt('10,000,000,000'.replace(/,/g, ''))).toString())
-    const initial_amount = toUint256WithFelts((BigInt('10,000,000,000'.replace(/,/g, ''))).toString())
+    const initial_amount = toUint256WithFelts((BigInt('10,000'.replace(/,/g, ''))).toString())
     await account0.invoke(
         txFlowContract, 
         'approve', 
@@ -353,207 +377,209 @@ describe("Start Workflow", function () {
     console.log('Tx: ', txHash)
     let txReceipt = await starknet.getTransactionReceipt(txHash)
 
-    console.log('Flow ID: ', parseInt(txReceipt['events'][0]['data'][0], 16))
+    let _tokenId = fromUint256WithFelts({ low: BigInt(txReceipt['events'][0]['data'][0]), high: BigInt(txReceipt['events'][0]['data'][1]) })
+    console.log('Flow tokenId', _tokenId.toString())
   })
 
-  it("ratings before", async function() {   
+  // it("ratings before", async function() {   
 
-    const data0 = await account0.call(txDharmaContract, "balanceOf", { account: account0.starknetContract.address })
-    const data1 = await account0.call(txDharmaContract, "balanceOf", { account: account1.starknetContract.address })
+  //   const data0 = await account0.call(txDharmaContract, "balanceOf", { account: account0.starknetContract.address })
+  //   const data1 = await account0.call(txDharmaContract, "balanceOf", { account: account1.starknetContract.address })
     
-    let b0 = fromUint256WithFelts(data0.balance).toString()
-    let b1 = fromUint256WithFelts(data1.balance).toString()
+  //   let b0 = fromUint256WithFelts(data0.balance).toString()
+  //   let b1 = fromUint256WithFelts(data1.balance).toString()
 
-    console.log('dharma 0', b0)
-    console.log('dharma 1', b1)
-  })
+  //   console.log('dharma 0', b0)
+  //   console.log('dharma 1', b1)
+  // })
 
-  it("rate counterpart 1", async function() {  
+  // it("rate counterpart 1", async function() {  
     
-    const txHash = await account0.invoke(
-        txAssetContract, 
-        "rate", 
-        { 
-          tokenId: toUint256WithFelts("0"),
-          rating:  toUint256WithFelts("1")
-        },
-        { maxFee: FEE}
-      )
-  })
+  //   const txHash = await account0.invoke(
+  //       txAssetContract, 
+  //       "rate", 
+  //       { 
+  //         tokenId: toUint256WithFelts("0"),
+  //         rating:  toUint256WithFelts("1")
+  //       },
+  //       { maxFee: FEE}
+  //     )
+  // })
 
-  it("rate counterpart 2", async function() {   
+  // it("rate counterpart 2", async function() {   
     
-    const txHash = await account1.invoke(
-        txAssetContract, 
-        "rate", 
-        { 
-          tokenId: toUint256WithFelts("0"),
-          rating:  toUint256WithFelts("1")
-        },
-        { maxFee: FEE}
-      )
-  })
+  //   const txHash = await account1.invoke(
+  //       txAssetContract, 
+  //       "rate", 
+  //       { 
+  //         tokenId: toUint256WithFelts("0"),
+  //         rating:  toUint256WithFelts("1")
+  //       },
+  //       { maxFee: FEE}
+  //     )
+  // })
 
-  it("unauthorise mint of Dharma", async function() {   
-    try{
-      const txHash = await account1.invoke(
-          txDharmaContract, 
-          "mint", 
-          { 
-            to: account1.starknetContract.address,
-            rating:  toUint256WithFelts("1")
-          },
-          { maxFee: FEE}
-        )
+  // it("unauthorise mint of Dharma", async function() {   
+  //   try{
+  //     const txHash = await account1.invoke(
+  //         txDharmaContract, 
+  //         "mint", 
+  //         { 
+  //           to: account1.starknetContract.address,
+  //           rating:  toUint256WithFelts("1")
+  //         },
+  //         { maxFee: FEE}
+  //       )
 
-        throw new Error('Should have failed')
-    }
-    catch(mess){
-    }
-  })
+  //       throw new Error('Should have failed')
+  //   }
+  //   catch(mess){
+  //   }
+  // })
 
-  it("ratings after", async function() {   
-    let tokenId = toUint256WithFelts("0")
+  // it("ratings after", async function() {   
+  //   let tokenId = toUint256WithFelts("0")
 
-    const data0 = await account0.call(txDharmaContract, "balanceOf", { account: account0.starknetContract.address })
-    const data1 = await account0.call(txDharmaContract, "balanceOf", { account: account1.starknetContract.address })
+  //   const data0 = await account0.call(txDharmaContract, "balanceOf", { account: account0.starknetContract.address })
+  //   const data1 = await account0.call(txDharmaContract, "balanceOf", { account: account1.starknetContract.address })
     
-    let b0 = fromUint256WithFelts(data0.balance).toString()
-    let b1 = fromUint256WithFelts(data1.balance).toString()
+  //   let b0 = fromUint256WithFelts(data0.balance).toString()
+  //   let b1 = fromUint256WithFelts(data1.balance).toString()
 
-    console.log('dharma 0', b0)
-    console.log('dharma 1', b1)
-  })
+  //   console.log('dharma 0', b0)
+  //   console.log('dharma 1', b1)
+  // })
 
-  it("total_supply", async function() {   
-    const data = await account0.call(txFlowContract, "totalSupply")
+  // it("total_supply", async function() {   
+  //   const data = await account0.call(txFlowContract, "totalSupply")
 
-    console.log('total supply', fromUint256WithFelts(data.totalSupply))
-  })
+  //   console.log('total supply', fromUint256WithFelts(data.totalSupply))
+  // })
 
-  it("balance", async function() {   
-    let tokenId = toUint256WithFelts("0")
+  // it("balance", async function() {   
+  //   let tokenId = toUint256WithFelts("0")
 
-    const data0 = await account0.call(txFlowContract, "balanceOf", { account: account0.starknetContract.address })
-    const data1 = await account0.call(txFlowContract, "balanceOf", { account: account1.starknetContract.address })
-    const data2 = await account0.call(txFlowContract, "balanceOf", { account: account2.starknetContract.address })
-    const datan = await account0.call(txFlowContract, "balanceOfNFT", { account: txAssetContract.address, tokenId: tokenId})
-    const datac = await account0.call(txFlowContract, "balanceOf", { account: txFlowContract.address })
-    const datad = await account0.call(txFlowContract, "balanceOf", { account: daoContract.address })
+  //   const data0 = await account0.call(txFlowContract, "balanceOf", { account: account0.starknetContract.address })
+  //   const data1 = await account0.call(txFlowContract, "balanceOf", { account: account1.starknetContract.address })
+  //   const data2 = await account0.call(txFlowContract, "balanceOf", { account: account2.starknetContract.address })
+  //   const datan = await account0.call(txFlowContract, "balanceOfNFT", { account: txAssetContract.address, tokenId: tokenId})
+  //   const datac = await account0.call(txFlowContract, "balanceOf", { account: txFlowContract.address })
+  //   const datad = await account0.call(txFlowContract, "balanceOf", { account: daoContract.address })
 
-    let b0 = (fromUint256WithFelts(data0.balance).toString())
-    let b1 = (fromUint256WithFelts(data1.balance).toString())
-    let b2 = (fromUint256WithFelts(data2.balance).toString())
-    let bn = (fromUint256WithFelts(datan.balance).toString())
-    let bc = (fromUint256WithFelts(datac.balance).toString())
-    let bd = (fromUint256WithFelts(datad.balance).toString())
+  //   let b0 = (fromUint256WithFelts(data0.balance).toString())
+  //   let b1 = (fromUint256WithFelts(data1.balance).toString())
+  //   let b2 = (fromUint256WithFelts(data2.balance).toString())
+  //   let bn = (fromUint256WithFelts(datan.balance).toString())
+  //   let bc = (fromUint256WithFelts(datac.balance).toString())
+  //   let bd = (fromUint256WithFelts(datad.balance).toString())
 
-    console.log('balance account 0', b0)
-    console.log('balance account 1', b1)
-    console.log('balance account 2', b2)
-    console.log('balance nft      ', bn)
-    console.log('balance escrow   ', bc)
-    console.log('balance dao      ', bd)
+  //   console.log('balance account 0', b0)
+  //   console.log('balance account 1', b1)
+  //   console.log('balance account 2', b2)
+  //   console.log('balance nft      ', bn)
+  //   console.log('balance escrow   ', bc)
+  //   console.log('balance dao      ', bd)
     
-    console.log('total', (BigInt(b0) + BigInt(b1) + BigInt(b2) + BigInt(bn) + BigInt(bc) + BigInt(bd)).toString())
-  })
+  //   console.log('total', (BigInt(b0) + BigInt(b1) + BigInt(b2) + BigInt(bn) + BigInt(bc) + BigInt(bd)).toString())
+  // })
 
-  it("states", async function() {   
-    const {block_number: block, block_timestamp: time} = await account1.call(txFlowContract, "state")
+  // it("states", async function() {   
+  //   const {block_number: block, block_timestamp: time} = await account1.call(txFlowContract, "state")
 
-    // let caller_address = '0x0' + toBN(caller).toString(16)
-    let block_number = Number(block)
-    let block_timestamp = new Date(Number(time) * 1000)
+  //   // let caller_address = '0x0' + toBN(caller).toString(16)
+  //   let block_number = Number(block)
+  //   let block_timestamp = new Date(Number(time) * 1000)
 
-    console.log('states', { block_number: block_number, block_timestamp: block_timestamp })
-  })
+  //   console.log('states', { block_number: block_number, block_timestamp: block_timestamp })
+  // })
   
-  it("add payment stream NO", async function() {
+  // it("add payment stream NO", async function() {
 
-    try{
-      const amount = toUint256WithFelts((BigInt('2'.replace(/,/g, '')) * ETH_WEI).toString())
-      await account0.invoke(
-          txFlowContract_no, 
-          'approve', 
-          { spender: txFlowContract_no.address, amount: amount}, 
-          { maxFee: FEE}
-        )
+  //   try{
+  //     const amount = toUint256WithFelts((BigInt('2'.replace(/,/g, '')) * ETH_WEI).toString())
+  //     await account0.invoke(
+  //         txFlowContract_no, 
+  //         'approve', 
+  //         { spender: txFlowContract_no.address, amount: amount}, 
+  //         { maxFee: FEE}
+  //       )
       
-      const {block_number: block, block_timestamp: time} = await account0.call(txFlowContract, "state")
+  //     const {block_number: block, block_timestamp: time} = await account0.call(txFlowContract, "state")
 
-      let block_timestamp = new Date(Number(time) * 1000)
+  //     let block_timestamp = new Date(Number(time) * 1000)
 
-      let start_timestamp = new Date(block_timestamp)
-      start_timestamp.setMinutes(block_timestamp.getMinutes())
-      let start_unixtime = Math.floor(start_timestamp.getTime() / 1000)
+  //     let start_timestamp = new Date(block_timestamp)
+  //     start_timestamp.setMinutes(block_timestamp.getMinutes())
+  //     let start_unixtime = Math.floor(start_timestamp.getTime() / 1000)
   
-      let maturity_timestamp = new Date(block_timestamp)
-      maturity_timestamp.setMinutes(block_timestamp.getMinutes() + 20)
-      let maturity_unixtime = Math.floor(maturity_timestamp.getTime() / 1000)
+  //     let maturity_timestamp = new Date(block_timestamp)
+  //     maturity_timestamp.setMinutes(block_timestamp.getMinutes() + 20)
+  //     let maturity_unixtime = Math.floor(maturity_timestamp.getTime() / 1000)
 
-      let tokenId = toUint256WithFelts("0")
+  //     let tokenId = toUint256WithFelts("0")
       
-      let txHash = await account0.invoke(
-          txFlowContract_no, 
-          "addNFTMaturityStream", 
-          { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId, target_amount: amount, initial_amount: amount, start: start_unixtime, maturity: maturity_unixtime }, 
-          { maxFee: FEE}
-        )
-      console.log('Tx: ', txHash)
-      let txReceipt = await starknet.getTransactionReceipt(txHash)
-      let len = txReceipt['events'].length
-      for (let i = 0; i < len; i++){
-        let _txData = txReceipt['events'][i]['data']
-        let txData = {
-          from_address: _txData[0],
-          amount: { low: parseInt(_txData[1], 16), high: parseInt(_txData[2], 16)},
-          count: Number(parseInt(_txData[3], 16)),
-          start_time: new Date(Number(parseInt(_txData[4], 16)) * 1000),
-          last_reset_time: new Date(Number(parseInt(_txData[5], 16)) * 1000),
-          maturity_time: new Date(Number(parseInt(_txData[6], 16)) * 1000),
-        }
-        console.log('Tx Receipt', txData)    
-      }
-      throw new Error('Should have failed')
-    }
-    catch(mess){
-    }
-  })
+  //     let txHash = await account0.invoke(
+  //         txFlowContract_no, 
+  //         "addNFTMaturityStream", 
+  //         { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId, target_amount: amount, initial_amount: amount, start: start_unixtime, maturity: maturity_unixtime }, 
+  //         { maxFee: FEE}
+  //       )
+  //     console.log('Tx: ', txHash)
+  //     let txReceipt = await starknet.getTransactionReceipt(txHash)
+  //     let len = txReceipt['events'].length
+  //     for (let i = 0; i < len; i++){
+  //       let _txData = txReceipt['events'][i]['data']
+  //       let txData = {
+  //         from_address: _txData[0],
+  //         amount: { low: parseInt(_txData[1], 16), high: parseInt(_txData[2], 16)},
+  //         count: Number(parseInt(_txData[3], 16)),
+  //         start_time: new Date(Number(parseInt(_txData[4], 16)) * 1000),
+  //         last_reset_time: new Date(Number(parseInt(_txData[5], 16)) * 1000),
+  //         maturity_time: new Date(Number(parseInt(_txData[6], 16)) * 1000),
+  //       }
+  //       console.log('Tx Receipt', txData)    
+  //     }
+  //     throw new Error('Should have failed')
+  //   }
+  //   catch(mess){
+  //   }
+  // })
 
-  it("add payment stream 2", async function() {   
-    const amount = toUint256WithFelts((BigInt('1'.replace(/,/g, ''))).toString())
-    await account0.invoke(
-        txFlowContract, 
-        'approve', 
-        { spender: txFlowContract.address, amount: amount}, 
-        { maxFee: FEE}
-      )
+  // it("add payment stream 2", async function() {   
+  //   const amount = toUint256WithFelts((BigInt('1'.replace(/,/g, ''))).toString())
+  //   await account0.invoke(
+  //       txFlowContract, 
+  //       'approve', 
+  //       { spender: txFlowContract.address, amount: amount}, 
+  //       { maxFee: FEE}
+  //     )
 
-    const {block_number: block, block_timestamp: time} = await account0.call(txFlowContract, "state")
+  //   const {block_number: block, block_timestamp: time} = await account0.call(txFlowContract, "state")
 
-    let block_timestamp = new Date(Number(time) * 1000)
+  //   let block_timestamp = new Date(Number(time) * 1000)
     
-    let start_timestamp = new Date(block_timestamp)
-    start_timestamp.setMinutes(block_timestamp.getMinutes())
-    let start_unixtime = Math.floor(start_timestamp.getTime() / 1000)
+  //   let start_timestamp = new Date(block_timestamp)
+  //   start_timestamp.setMinutes(block_timestamp.getMinutes())
+  //   let start_unixtime = Math.floor(start_timestamp.getTime() / 1000)
 
-    let maturity_timestamp = new Date(block_timestamp)
-    maturity_timestamp.setMinutes(block_timestamp.getMinutes() + 15000)
-    let maturity_unixtime = Math.floor(maturity_timestamp.getTime() / 1000)
+  //   let maturity_timestamp = new Date(block_timestamp)
+  //   maturity_timestamp.setMinutes(block_timestamp.getMinutes() + 15000)
+  //   let maturity_unixtime = Math.floor(maturity_timestamp.getTime() / 1000)
 
-    let tokenId = toUint256WithFelts("0")
+  //   let tokenId = toUint256WithFelts("0")
     
-    let txHash = await account0.invoke(
-          txFlowContract, 
-          "addNFTMaturityStream", 
-          { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId, target_amount: amount, initial_amount: amount, start: start_unixtime, maturity: maturity_unixtime }, 
-          { maxFee: FEE}
-        )
+  //   let txHash = await account0.invoke(
+  //         txFlowContract, 
+  //         "addNFTMaturityStream", 
+  //         { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId, target_amount: amount, initial_amount: amount, start: start_unixtime, maturity: maturity_unixtime }, 
+  //         { maxFee: FEE}
+  //       )
 
-    console.log('Tx: ', txHash)
-    let txReceipt = await starknet.getTransactionReceipt(txHash)
-    console.log('Flow ID: ', parseInt(txReceipt['events'][0]['data'][0], 16))
-  })
+  //   console.log('Tx: ', txHash)
+  //   let txReceipt = await starknet.getTransactionReceipt(txHash)
+  //   let _tokenId = fromUint256WithFelts({ low: BigInt(txReceipt['events'][0]['data'][0]), high: BigInt(txReceipt['events'][0]['data'][1]) })
+  //   console.log('Flow tokenId', _tokenId.toString())
+  // })
 
   it("increase amount", async function() {   
     let tokenId = toUint256WithFelts("0")
@@ -562,16 +588,145 @@ describe("Start Workflow", function () {
     await account0.invoke(
       txFlowContract, 
       'approve', 
-      { spender: txFlowContract.address, amount: initial_amount}, 
+      { spender: txEscrowContract.address, amount: initial_amount}, 
       { maxFee: FEE}
     )
 
     await account0.invoke(
-        txFlowContract, 
-        'increaseAmount', 
-        { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId, id: 0, amount: initial_amount }, 
+      txEscrowContract, 
+        'increase', 
+        { tokenId: tokenId, amount: initial_amount }, 
         { maxFee: FEE}
       )
+  })
+
+  // it("increase amount", async function() {   
+  //   let tokenId = toUint256WithFelts("0")
+  //   const initial_amount = toUint256WithFelts((BigInt('1,000'.replace(/,/g, ''))).toString())
+
+  //   await account0.invoke(
+  //     txFlowContract, 
+  //     'approve', 
+  //     { spender: txFlowContract.address, amount: initial_amount}, 
+  //     { maxFee: FEE}
+  //   )
+
+  //   await account0.invoke(
+  //       txFlowContract, 
+  //       'increaseAmount', 
+  //       { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId, id: 0, amount: initial_amount }, 
+  //       { maxFee: FEE}
+  //     )
+  // })
+
+  // it("balance", async function() {   
+  //   let tokenId = toUint256WithFelts("0")
+
+  //   const data0 = await account0.call(txFlowContract, "balanceOf", { account: account0.starknetContract.address })
+  //   const data1 = await account0.call(txFlowContract, "balanceOf", { account: account1.starknetContract.address })
+  //   const data2 = await account0.call(txFlowContract, "balanceOf", { account: account2.starknetContract.address })
+  //   const datan = await account0.call(txFlowContract, "balanceOfNFT", { account: txAssetContract.address, tokenId: tokenId})
+  //   const datac = await account0.call(txFlowContract, "balanceOf", { account: txFlowContract.address })
+  //   const datad = await account0.call(txFlowContract, "balanceOf", { account: daoContract.address })
+
+  //   let b0 = (fromUint256WithFelts(data0.balance).toString())
+  //   let b1 = (fromUint256WithFelts(data1.balance).toString())
+  //   let b2 = (fromUint256WithFelts(data2.balance).toString())
+  //   let bn = (fromUint256WithFelts(datan.balance).toString())
+  //   let bc = (fromUint256WithFelts(datac.balance).toString())
+  //   let bd = (fromUint256WithFelts(datad.balance).toString())
+
+  //   console.log('balance account 0', b0)
+  //   console.log('balance account 1', b1)
+  //   console.log('balance account 2', b2)
+  //   console.log('balance nft      ', bn)
+  //   console.log('balance escrow   ', bc)
+  //   console.log('balance dao      ', bd)
+    
+  //   console.log('total', (BigInt(b0) + BigInt(b1) + BigInt(b2) + BigInt(bn) + BigInt(bc) + BigInt(bd)).toString())
+  // })
+
+  // it("get before locked out payment stream", async function() {   
+    
+  //   const amount = await account0.call(txFlowContract, "lockedOut", { payer_address: account0.address })
+  //   console.log('locked amount', {locked_amount: fromUint256WithFelts(amount.locked_amount).toString(), block_timestamp: new Date(Number(amount.block_timestamp) * 1000)})
+  // })
+
+  // it("get correct payment stream", async function() {   
+  //   let tokenId = toUint256WithFelts("0")
+  //   const amount = await account1.call(txFlowContract, "withdrawAmountNFT", { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId })
+  //   console.log('can withdraw', {available_amount: fromUint256WithFelts(amount.available_amount).toString(), locked_amount: fromUint256WithFelts(amount.locked_amount).toString(), block_timestamp: new Date(Number(amount.block_timestamp) * 1000)})
+  // })
+
+  // it("withdraw", async function() {
+  //   let tokenId = toUint256WithFelts("0")
+  //   let txHash = await account2.invoke(
+  //       txFlowContract, 
+  //       "withdrawNFT", 
+  //       { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId }, 
+  //       { maxFee: FEE}
+  //     )
+  //   console.log('Tx:', txHash)
+  //   let txReceipt = await starknet.getTransactionReceipt(txHash)
+  //   console.log('Tx:', txHash)
+  // })
+
+  // it("balance", async function() {   
+  //   let tokenId = toUint256WithFelts("0")
+
+  //   const data0 = await account0.call(txFlowContract, "balanceOf", { account: account0.starknetContract.address })
+  //   const data1 = await account0.call(txFlowContract, "balanceOf", { account: account1.starknetContract.address })
+  //   const data2 = await account0.call(txFlowContract, "balanceOf", { account: account2.starknetContract.address })
+  //   const datan = await account0.call(txFlowContract, "balanceOfNFT", { account: txAssetContract.address, tokenId: tokenId})
+  //   const datac = await account0.call(txFlowContract, "balanceOf", { account: txFlowContract.address })
+  //   const datad = await account0.call(txFlowContract, "balanceOf", { account: daoContract.address })
+
+  //   let b0 = (fromUint256WithFelts(data0.balance).toString())
+  //   let b1 = (fromUint256WithFelts(data1.balance).toString())
+  //   let b2 = (fromUint256WithFelts(data2.balance).toString())
+  //   let bn = (fromUint256WithFelts(datan.balance).toString())
+  //   let bc = (fromUint256WithFelts(datac.balance).toString())
+  //   let bd = (fromUint256WithFelts(datad.balance).toString())
+
+  //   console.log('balance account 0', b0)
+  //   console.log('balance account 1', b1)
+  //   console.log('balance account 2', b2)
+  //   console.log('balance nft      ', bn)
+  //   console.log('balance escrow   ', bc)
+  //   console.log('balance dao      ', bd)
+    
+  //   console.log('total', (BigInt(b0) + BigInt(b1) + BigInt(b2) + BigInt(bn) + BigInt(bc) + BigInt(bd)).toString())
+  // })
+
+  // it("withdraw", async function() {
+  //   let tokenId = toUint256WithFelts("0")
+  //   let txHash = await account1.invoke(
+  //       txFlowContract, 
+  //       "withdrawNFT", 
+  //       { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId }, 
+  //       { maxFee: FEE}
+  //     )
+  //   console.log('Tx:', txHash)
+  //   let txReceipt = await starknet.getTransactionReceipt(txHash)
+  //   console.log('Tx:', txHash)
+  // })
+
+  it("escrow balance", async function() {   
+    let tokenId = toUint256WithFelts("0")
+
+    const data0 = await account0.call(txEscrowContract, "balanceOf", { account: account0.starknetContract.address, id: tokenId })
+    const data1 = await account0.call(txEscrowContract, "balanceOf", { account: account1.starknetContract.address, id: tokenId })
+    const data2 = await account0.call(txEscrowContract, "balanceOf", { account: account2.starknetContract.address, id: tokenId })
+    
+    let b0 = (fromUint256WithFelts(data0.balance).toString())
+    let b1 = (fromUint256WithFelts(data1.balance).toString())
+    let b2 = (fromUint256WithFelts(data2.balance).toString())
+    
+    console.log('balance account 0', b0)
+    console.log('balance account 1', b1)
+    console.log('balance account 2', b2)
+    
+    console.log('total', (BigInt(b0) + BigInt(b1) + BigInt(b2)))
   })
 
   it("balance", async function() {   
@@ -601,57 +756,6 @@ describe("Start Workflow", function () {
     console.log('total', (BigInt(b0) + BigInt(b1) + BigInt(b2) + BigInt(bn) + BigInt(bc) + BigInt(bd)).toString())
   })
 
-  it("get before locked out payment stream", async function() {   
-    
-    const amount = await account0.call(txFlowContract, "lockedOut", { payer_address: account0.address })
-    console.log('locked amount', {locked_amount: fromUint256WithFelts(amount.locked_amount).toString(), block_timestamp: new Date(Number(amount.block_timestamp) * 1000)})
-  })
-
-  it("get correct payment stream", async function() {   
-    let tokenId = toUint256WithFelts("0")
-    const amount = await account1.call(txFlowContract, "withdrawAmountNFT", { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId })
-    console.log('can withdraw', {available_amount: fromUint256WithFelts(amount.available_amount).toString(), locked_amount: fromUint256WithFelts(amount.locked_amount).toString(), block_timestamp: new Date(Number(amount.block_timestamp) * 1000)})
-  })
-
-  it("withdraw", async function() {
-    let tokenId = toUint256WithFelts("0")
-    let txHash = await account2.invoke(
-        txFlowContract, 
-        "withdrawNFT", 
-        { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId }, 
-        { maxFee: FEE}
-      )
-    console.log('Tx:', txHash)
-    let txReceipt = await starknet.getTransactionReceipt(txHash)
-    console.log('Tx:', txHash)
-  })
-
-  it("balance", async function() {   
-    let tokenId = toUint256WithFelts("0")
-
-    const data0 = await account0.call(txFlowContract, "balanceOf", { account: account0.starknetContract.address })
-    const data1 = await account0.call(txFlowContract, "balanceOf", { account: account1.starknetContract.address })
-    const data2 = await account0.call(txFlowContract, "balanceOf", { account: account2.starknetContract.address })
-    const datan = await account0.call(txFlowContract, "balanceOfNFT", { account: txAssetContract.address, tokenId: tokenId})
-    const datac = await account0.call(txFlowContract, "balanceOf", { account: txFlowContract.address })
-    const datad = await account0.call(txFlowContract, "balanceOf", { account: daoContract.address })
-
-    let b0 = (fromUint256WithFelts(data0.balance).toString())
-    let b1 = (fromUint256WithFelts(data1.balance).toString())
-    let b2 = (fromUint256WithFelts(data2.balance).toString())
-    let bn = (fromUint256WithFelts(datan.balance).toString())
-    let bc = (fromUint256WithFelts(datac.balance).toString())
-    let bd = (fromUint256WithFelts(datad.balance).toString())
-
-    console.log('balance account 0', b0)
-    console.log('balance account 1', b1)
-    console.log('balance account 2', b2)
-    console.log('balance nft      ', bn)
-    console.log('balance escrow   ', bc)
-    console.log('balance dao      ', bd)
-    
-    console.log('total', (BigInt(b0) + BigInt(b1) + BigInt(b2) + BigInt(bn) + BigInt(bc) + BigInt(bd)).toString())
-  })
 
   it("withdraw", async function() {
     let tokenId = toUint256WithFelts("0")
@@ -661,89 +765,66 @@ describe("Start Workflow", function () {
         { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId }, 
         { maxFee: FEE}
       )
-    console.log('Tx:', txHash)
-    let txReceipt = await starknet.getTransactionReceipt(txHash)
-    console.log('Tx:', txHash)
-  })
-
-  it("balance", async function() {   
-    let tokenId = toUint256WithFelts("0")
-
-    const data0 = await account0.call(txFlowContract, "balanceOf", { account: account0.starknetContract.address })
-    const data1 = await account0.call(txFlowContract, "balanceOf", { account: account1.starknetContract.address })
-    const data2 = await account0.call(txFlowContract, "balanceOf", { account: account2.starknetContract.address })
-    const datan = await account0.call(txFlowContract, "balanceOfNFT", { account: txAssetContract.address, tokenId: tokenId})
-    const datac = await account0.call(txFlowContract, "balanceOf", { account: txFlowContract.address })
-    const datad = await account0.call(txFlowContract, "balanceOf", { account: daoContract.address })
-
-    let b0 = (fromUint256WithFelts(data0.balance).toString())
-    let b1 = (fromUint256WithFelts(data1.balance).toString())
-    let b2 = (fromUint256WithFelts(data2.balance).toString())
-    let bn = (fromUint256WithFelts(datan.balance).toString())
-    let bc = (fromUint256WithFelts(datac.balance).toString())
-    let bd = (fromUint256WithFelts(datad.balance).toString())
-
-    console.log('balance account 0', b0)
-    console.log('balance account 1', b1)
-    console.log('balance account 2', b2)
-    console.log('balance nft      ', bn)
-    console.log('balance escrow   ', bc)
-    console.log('balance dao      ', bd)
-    
-    console.log('total', (BigInt(b0) + BigInt(b1) + BigInt(b2) + BigInt(bn) + BigInt(bc) + BigInt(bd)).toString())
-  })
-
-
-  it("withdraw", async function() {
-    let tokenId = toUint256WithFelts("0")
-    let txHash = await account1.invoke(
-        txFlowContract, 
-        "withdrawNFT", 
-        { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId }, 
-        { maxFee: FEE}
-      )
 
     let txReceipt = await starknet.getTransactionReceipt(txHash)
     console.log('Tx:', txHash)
   })
 
-  it("withdraw wrong address", async function() {
-    try{
-      let tokenId = toUint256WithFelts("0")
-      let txHash = await account0.invoke(
-          txFlowContract, 
-          "withdrawNFT", 
-          { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId }, 
-          { maxFee: FEE}
-        )
-      console.log('Tx:', txHash)
-      let txReceipt = await starknet.getTransactionReceipt(txHash)
-      let len = txReceipt['events'].length
-      for (let i = 0; i < len; i++){
-        let _txData = txReceipt['events'][i]['data']
+  // it("withdraw wrong address", async function() {
+  //   try{
+  //     let tokenId = toUint256WithFelts("0")
+  //     let txHash = await account0.invoke(
+  //         txFlowContract, 
+  //         "withdrawNFT", 
+  //         { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId }, 
+  //         { maxFee: FEE}
+  //       )
+  //     console.log('Tx:', txHash)
+  //     let txReceipt = await starknet.getTransactionReceipt(txHash)
+  //     let len = txReceipt['events'].length
+  //     for (let i = 0; i < len; i++){
+  //       let _txData = txReceipt['events'][i]['data']
         
-        let txData = {
-          from_address: _txData[0],
-          amount: ({ low: parseInt(_txData[1], 16), high: parseInt(_txData[2], 16)}),
-          locked_amount: ({ low: parseInt(_txData[3], 16), high: parseInt(_txData[4], 16)}),
-          initial_amount: ({ low: parseInt(_txData[5], 16), high: parseInt(_txData[6], 16)}),
+  //       let txData = {
+  //         from_address: _txData[0],
+  //         amount: ({ low: parseInt(_txData[1], 16), high: parseInt(_txData[2], 16)}),
+  //         locked_amount: ({ low: parseInt(_txData[3], 16), high: parseInt(_txData[4], 16)}),
+  //         initial_amount: ({ low: parseInt(_txData[5], 16), high: parseInt(_txData[6], 16)}),
 
-          start_time: new Date(Number(parseInt(_txData[7], 16)) * 1000),
-          maturity_time: new Date(Number(parseInt(_txData[8], 16)) * 1000),
-          block_time: new Date(Number(parseInt(_txData[9], 16)) * 1000)
-        }
-        console.log('withdraw', i, txData)
-      }
+  //         start_time: new Date(Number(parseInt(_txData[7], 16)) * 1000),
+  //         maturity_time: new Date(Number(parseInt(_txData[8], 16)) * 1000),
+  //         block_time: new Date(Number(parseInt(_txData[9], 16)) * 1000)
+  //       }
+  //       console.log('withdraw', i, txData)
+  //     }
 
-      throw new Error('should have failed')
-    } catch (err: any) {
-    }
-  })
+  //     throw new Error('should have failed')
+  //   } catch (err: any) {
+  //   }
+  // })
 
-  it("get after locked out payment stream", async function() {   
+  // it("get after locked out payment stream", async function() {   
     
-    const amount = await account0.call(txFlowContract, "lockedOut", { payer_address: account0.address })
-    console.log('locked amount', {locked_amount: fromUint256WithFelts(amount.locked_amount).toString(), block_timestamp: new Date(Number(amount.block_timestamp) * 1000)})
+  //   const amount = await account0.call(txFlowContract, "lockedOut", { payer_address: account0.address })
+  //   console.log('locked amount', {locked_amount: fromUint256WithFelts(amount.locked_amount).toString(), block_timestamp: new Date(Number(amount.block_timestamp) * 1000)})
+  // })
+
+  it("escrow balance", async function() {   
+    let tokenId = toUint256WithFelts("0")
+
+    const data0 = await account0.call(txEscrowContract, "balanceOf", { account: account0.starknetContract.address, id: tokenId })
+    const data1 = await account0.call(txEscrowContract, "balanceOf", { account: account1.starknetContract.address, id: tokenId })
+    const data2 = await account0.call(txEscrowContract, "balanceOf", { account: account2.starknetContract.address, id: tokenId })
+    
+    let b0 = (fromUint256WithFelts(data0.balance).toString())
+    let b1 = (fromUint256WithFelts(data1.balance).toString())
+    let b2 = (fromUint256WithFelts(data2.balance).toString())
+    
+    console.log('balance account 0', b0)
+    console.log('balance account 1', b1)
+    console.log('balance account 2', b2)
+    
+    console.log('total', (BigInt(b0) + BigInt(b1) + BigInt(b2)))
   })
 
   it("balance", async function() {   
@@ -773,55 +854,55 @@ describe("Start Workflow", function () {
     console.log('total', (BigInt(b0) + BigInt(b1) + BigInt(b2) + BigInt(bn) + BigInt(bc) + BigInt(bd)).toString())
   })
 
-  it("pause", async function() {   
-    let tokenId = toUint256WithFelts("0")
+  // it("pause", async function() {   
+  //   let tokenId = toUint256WithFelts("0")
     
-    await account0.invoke(
-        txFlowContract, 
-        'pause', 
-        { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId, pause: 1 }, 
-        { maxFee: FEE}
-      )
-  })
+  //   await account0.invoke(
+  //       txFlowContract, 
+  //       'pause', 
+  //       { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId, pause: 1 }, 
+  //       { maxFee: FEE}
+  //     )
+  // })
 
-  it("pause", async function() {   
-    let tokenId = toUint256WithFelts("0")
+  // it("pause", async function() {   
+  //   let tokenId = toUint256WithFelts("0")
     
-    await account1.invoke(
-        txFlowContract, 
-        'pause', 
-        { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId, pause: 1 }, 
-        { maxFee: FEE}
-      )
-  })
+  //   await account1.invoke(
+  //       txFlowContract, 
+  //       'pause', 
+  //       { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId, pause: 1 }, 
+  //       { maxFee: FEE}
+  //     )
+  // })
  
 
-  it("balance", async function() {   
-    let tokenId = toUint256WithFelts("0")
+  // it("balance", async function() {   
+  //   let tokenId = toUint256WithFelts("0")
 
-    const data0 = await account0.call(txFlowContract, "balanceOf", { account: account0.starknetContract.address })
-    const data1 = await account0.call(txFlowContract, "balanceOf", { account: account1.starknetContract.address })
-    const data2 = await account0.call(txFlowContract, "balanceOf", { account: account2.starknetContract.address })
-    const datan = await account0.call(txFlowContract, "balanceOfNFT", { account: txAssetContract.address, tokenId: tokenId})
-    const datac = await account0.call(txFlowContract, "balanceOf", { account: txFlowContract.address })
-    const datad = await account0.call(txFlowContract, "balanceOf", { account: daoContract.address })
+  //   const data0 = await account0.call(txFlowContract, "balanceOf", { account: account0.starknetContract.address })
+  //   const data1 = await account0.call(txFlowContract, "balanceOf", { account: account1.starknetContract.address })
+  //   const data2 = await account0.call(txFlowContract, "balanceOf", { account: account2.starknetContract.address })
+  //   const datan = await account0.call(txFlowContract, "balanceOfNFT", { account: txAssetContract.address, tokenId: tokenId})
+  //   const datac = await account0.call(txFlowContract, "balanceOf", { account: txFlowContract.address })
+  //   const datad = await account0.call(txFlowContract, "balanceOf", { account: daoContract.address })
 
-    let b0 = (fromUint256WithFelts(data0.balance).toString())
-    let b1 = (fromUint256WithFelts(data1.balance).toString())
-    let b2 = (fromUint256WithFelts(data2.balance).toString())
-    let bn = (fromUint256WithFelts(datan.balance).toString())
-    let bc = (fromUint256WithFelts(datac.balance).toString())
-    let bd = (fromUint256WithFelts(datad.balance).toString())
+  //   let b0 = (fromUint256WithFelts(data0.balance).toString())
+  //   let b1 = (fromUint256WithFelts(data1.balance).toString())
+  //   let b2 = (fromUint256WithFelts(data2.balance).toString())
+  //   let bn = (fromUint256WithFelts(datan.balance).toString())
+  //   let bc = (fromUint256WithFelts(datac.balance).toString())
+  //   let bd = (fromUint256WithFelts(datad.balance).toString())
 
-    console.log('balance account 0', b0)
-    console.log('balance account 1', b1)
-    console.log('balance account 2', b2)
-    console.log('balance nft      ', bn)
-    console.log('balance escrow   ', bc)
-    console.log('balance dao      ', bd)
+  //   console.log('balance account 0', b0)
+  //   console.log('balance account 1', b1)
+  //   console.log('balance account 2', b2)
+  //   console.log('balance nft      ', bn)
+  //   console.log('balance escrow   ', bc)
+  //   console.log('balance dao      ', bd)
     
-    console.log('total', (BigInt(b0) + BigInt(b1) + BigInt(b2) + BigInt(bn) + BigInt(bc) + BigInt(bd)).toString())
-  })
+  //   console.log('total', (BigInt(b0) + BigInt(b1) + BigInt(b2) + BigInt(bn) + BigInt(bc) + BigInt(bd)).toString())
+  // })
 
   it("decrease amount", async function() {   
     let tokenId = toUint256WithFelts("0")
@@ -829,30 +910,43 @@ describe("Start Workflow", function () {
 
 
     await account0.invoke(
-        txFlowContract, 
-        'decreaseAmount', 
-        { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId, id: 0, amount: initial_amount }, 
+        txEscrowContract, 
+        'decrease', 
+        { tokenId: tokenId, amount: initial_amount }, 
         { maxFee: FEE}
       )
   })
 
-  it("decrease amount wrong", async function() {   
-    try{
+  // it("decrease amount", async function() {   
+  //   let tokenId = toUint256WithFelts("0")
+  //   const initial_amount = toUint256WithFelts((BigInt('500'.replace(/,/g, ''))).toString())
+
+
+  //   await account0.invoke(
+  //       txFlowContract, 
+  //       'decreaseAmount', 
+  //       { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId, id: 0, amount: initial_amount }, 
+  //       { maxFee: FEE}
+  //     )
+  // })
+
+  // it("decrease amount wrong", async function() {   
+  //   try{
     
-      let tokenId = toUint256WithFelts("0")
-    const initial_amount = toUint256WithFelts((BigInt('500'.replace(/,/g, ''))).toString())
+  //     let tokenId = toUint256WithFelts("0")
+  //   const initial_amount = toUint256WithFelts((BigInt('500'.replace(/,/g, ''))).toString())
 
 
-    await account1.invoke(
-        txFlowContract, 
-        'decreaseAmount', 
-        { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId, id: 0, amount: initial_amount }, 
-        { maxFee: FEE}
-      )
-      throw new Error('should have failed')
-    } catch (err: any) {
-    }
-  })
+  //   await account1.invoke(
+  //       txFlowContract, 
+  //       'decreaseAmount', 
+  //       { beneficiary_address: txAssetContract.address, beneficiary_tokenId: tokenId, id: 0, amount: initial_amount }, 
+  //       { maxFee: FEE}
+  //     )
+  //     throw new Error('should have failed')
+  //   } catch (err: any) {
+  //   }
+  // })
 
   it("member weight", async function() {   
     let tokenId = toUint256WithFelts("0")
@@ -929,6 +1023,24 @@ describe("Start Workflow", function () {
     console.log('balance 0', b0)
     console.log('balance 1', b1)
     console.log('balance c', bc)
+  })
+
+  it("escrow balance", async function() {   
+    let tokenId = toUint256WithFelts("0")
+
+    const data0 = await account0.call(txEscrowContract, "balanceOf", { account: account0.starknetContract.address, id: tokenId })
+    const data1 = await account0.call(txEscrowContract, "balanceOf", { account: account1.starknetContract.address, id: tokenId })
+    const data2 = await account0.call(txEscrowContract, "balanceOf", { account: account2.starknetContract.address, id: tokenId })
+    
+    let b0 = (fromUint256WithFelts(data0.balance).toString())
+    let b1 = (fromUint256WithFelts(data1.balance).toString())
+    let b2 = (fromUint256WithFelts(data2.balance).toString())
+    
+    console.log('balance account 0', b0)
+    console.log('balance account 1', b1)
+    console.log('balance account 2', b2)
+    
+    console.log('total', (BigInt(b0) + BigInt(b1) + BigInt(b2)))
   })
 
   it("balance", async function() {   

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows ERC20 Wrapper Contracts for Cairo v0.1.1 (traflows/txFlow.cairo)
+# TradeFlows ERC20 Wrapper Contracts for Cairo v0.2.0 (traflows/txFlow.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  
@@ -14,7 +14,7 @@
 
 from starkware.starknet.common.syscalls import get_caller_address, get_contract_address, get_block_number, get_block_timestamp
 from starkware.cairo.common.cairo_builtins import HashBuiltin
-from starkware.cairo.common.math import assert_not_equal
+from starkware.cairo.common.math import assert_not_equal, assert_not_zero
 from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.cairo.common.uint256 import Uint256
 
@@ -24,7 +24,7 @@ from openzeppelin.token.erc20.interfaces.IERC20 import IERC20
 from openzeppelin.security.safemath import SafeUint256
 from openzeppelin.access.ownable import Ownable
 
-from tradeflows.library.flow import FLOW_in_count, FLOW_base_token, Flow
+from tradeflows.library.flow import FLOW_in, FLOW_in_count, FLOW_base_token, FLOW_id_streams, MaturityStreamStructure, Flow
 from tradeflows.library.asset import Asset
 
 
@@ -36,6 +36,7 @@ func constructor{
     }(
         name: felt,
         symbol: felt,
+        owner: felt,
         baseToken: felt
     ):
 
@@ -43,6 +44,8 @@ func constructor{
     
     let (decimals) = IERC20.decimals(contract_address=baseToken)
     ERC20.initializer(name, symbol, decimals)
+
+    Ownable.initializer(owner)
 
     return ()
 end
@@ -494,6 +497,22 @@ end
 # Externals
 #
 
+@storage_var
+func txOutFlow_address() -> (address: felt):
+end
+
+# Set OutFlow address
+@external
+func setOutFlowAddress{
+        syscall_ptr: felt*,
+        pedersen_ptr: HashBuiltin*,
+        range_check_ptr
+    }(address: felt):
+    Ownable.assert_only_owner()
+    txOutFlow_address.write(address)
+    return ()
+end
+
 # Withdrawn any available amount.
 @external
 func withdraw{
@@ -564,7 +583,7 @@ func addMaturityStream{
         start: felt,
         maturity: felt
     ) -> (
-        caller_address: felt
+        flowId: Uint256
     ):
     ReentrancyGuard._start()
     let (payer_address)     = get_caller_address()
@@ -578,9 +597,9 @@ func addMaturityStream{
         assert_not_equal(payer_address, contract_address)
     end 
 
-    let (caller_address)    = Flow.addMaturityStream(beneficiary_address, beneficiary_tokenId, target_amount, initial_amount, start, maturity, FALSE)
+    let (flowId)    = Flow.addMaturityStream(beneficiary_address, beneficiary_tokenId, target_amount, initial_amount, start, maturity, FALSE)
     ReentrancyGuard._end()
-    return (caller_address=caller_address)
+    return (flowId=flowId)
 end
 
 # Add a new payment stream
@@ -597,7 +616,7 @@ func addNFTMaturityStream{
         start: felt,
         maturity: felt
     ) -> (
-        caller_address: felt
+        flowId: Uint256
     ):
     ReentrancyGuard._start()
     let (payer_address)   = get_caller_address()
@@ -608,46 +627,46 @@ func addNFTMaturityStream{
         assert_not_equal(payer_address, contract_address)
     end 
 
-    let (caller_address) = Flow.addMaturityStream(beneficiary_address, beneficiary_tokenId, target_amount, initial_amount, start, maturity, TRUE)
+    let (flowId) = Flow.addMaturityStream(beneficiary_address, beneficiary_tokenId, target_amount, initial_amount, start, maturity, TRUE)
     ReentrancyGuard._end()
-    return (caller_address=caller_address)
+    return (flowId=flowId)
 end
 
-# Increase locked amount for an existing stream
-@external
-func increaseAmount{
-        syscall_ptr : felt*,
-        pedersen_ptr : HashBuiltin*,
-        range_check_ptr
-    }(
-        beneficiary_address: felt, 
-        beneficiary_tokenId: Uint256, 
-        id: felt,
-        amount: Uint256
-    ) -> ():
-    ReentrancyGuard._start()
-    Flow.increaseAmount(beneficiary_address, beneficiary_tokenId, id, amount)
-    ReentrancyGuard._end()
-    return ()
-end
+# # Increase locked amount for an existing stream
+# @external
+# func increaseAmount{
+#         syscall_ptr : felt*,
+#         pedersen_ptr : HashBuiltin*,
+#         range_check_ptr
+#     }(
+#         beneficiary_address: felt, 
+#         beneficiary_tokenId: Uint256, 
+#         id: felt,
+#         amount: Uint256
+#     ) -> ():
+#     ReentrancyGuard._start()
+#     Flow.increaseAmount(beneficiary_address, beneficiary_tokenId, id, amount)
+#     ReentrancyGuard._end()
+#     return ()
+# end
 
-# Decrease locked amount for an existing stream
-@external
-func decreaseAmount{
-        syscall_ptr : felt*,
-        pedersen_ptr : HashBuiltin*,
-        range_check_ptr
-    }(
-        beneficiary_address: felt, 
-        beneficiary_tokenId: Uint256, 
-        id: felt,
-        amount: Uint256
-    ) -> ():
-    ReentrancyGuard._start()
-    Flow.decreaseAmount(beneficiary_address, beneficiary_tokenId, id, amount)
-    ReentrancyGuard._end()
-    return ()
-end
+# # Decrease locked amount for an existing stream
+# @external
+# func decreaseAmount{
+#         syscall_ptr : felt*,
+#         pedersen_ptr : HashBuiltin*,
+#         range_check_ptr
+#     }(
+#         beneficiary_address: felt, 
+#         beneficiary_tokenId: Uint256, 
+#         id: felt,
+#         amount: Uint256
+#     ) -> ():
+#     ReentrancyGuard._start()
+#     Flow.decreaseAmount(beneficiary_address, beneficiary_tokenId, id, amount)
+#     ReentrancyGuard._end()
+#     return ()
+# end
 
 # Deposit base token
 @external
@@ -675,6 +694,160 @@ func withdrawBase{
     ) -> ():
     ReentrancyGuard._start()
     Flow.withdrawBase(amount)
+    ReentrancyGuard._end()
+    return ()
+end
+
+#
+# ERC1155 Extentions
+#
+
+# Get the locked amount to be paid by flow given tokenId
+@view
+func lockedTokenId{
+        syscall_ptr: felt*, 
+        pedersen_ptr: HashBuiltin*, 
+        range_check_ptr
+    }(
+        address: felt,
+        tokenId: Uint256
+    ) -> (
+        locked_amount: Uint256, 
+        block_timestamp: felt
+    ):
+    alloc_locals
+
+    let (idStruct)                          = FLOW_id_streams.read(tokenId)
+    
+    with_attr error_message("tokenId not found"):
+        assert_not_zero(idStruct.beneficiary)
+    end
+
+    let (stream)                            = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
+    
+
+    if stream.payer == address: 
+
+        let (block_timestamp)               = get_block_timestamp()    
+        let (available_amount, locked_amount)= Flow.calc_stream(stream, block_timestamp)
+        
+        return (locked_amount=locked_amount, block_timestamp=block_timestamp)
+    else:
+        let (block_timestamp)               = get_block_timestamp()
+        return (locked_amount=Uint256(0,0), block_timestamp=block_timestamp)
+    end
+end
+
+# Increase locked amount for an existing stream by tokenId
+@external
+func increaseTokenId{
+        syscall_ptr : felt*,
+        pedersen_ptr : HashBuiltin*,
+        range_check_ptr
+    }(
+        address: felt,
+        tokenId: Uint256,
+        amount : Uint256
+    ) -> ():
+    ReentrancyGuard._start()
+
+    let (outFlow)  = txOutFlow_address.read()
+    let (caller)   = get_caller_address()
+
+    with_attr error_message("tokenId not found"):
+        assert outFlow = caller
+    end
+
+    let (idStruct) = FLOW_id_streams.read(tokenId)
+    
+    with_attr error_message("tokenId not found"):
+        assert_not_zero(idStruct.beneficiary)
+    end
+
+    let (stream)   = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
+
+    with_attr error_message("only owner can call this function"):
+        assert stream.payer = address
+    end
+
+
+    Flow.increaseAmount(idStruct.beneficiary, idStruct.tokenId, idStruct.idx, amount)
+    ReentrancyGuard._end()
+    return ()
+end
+
+# Decrease locked amount for an existing stream by tokenId
+@external
+func decreaseTokenId{
+        syscall_ptr : felt*,
+        pedersen_ptr : HashBuiltin*,
+        range_check_ptr
+    }(
+        address: felt,
+        tokenId: Uint256,
+        amount : Uint256
+    ) -> ():
+    ReentrancyGuard._start()
+
+    let (outFlow)  = txOutFlow_address.read()
+    let (caller)   = get_caller_address()
+
+    with_attr error_message("tokenId not found"):
+        assert outFlow = caller
+    end
+
+    let (idStruct) = FLOW_id_streams.read(tokenId)
+
+    with_attr error_message("tokenId not found"):
+        assert_not_zero(idStruct.beneficiary)
+    end
+
+    let (stream)   = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
+
+    with_attr error_message("only owner can call this function"):
+        assert stream.payer = address
+    end
+
+    Flow.decreaseAmount(idStruct.beneficiary, idStruct.tokenId, idStruct.idx, amount)
+    ReentrancyGuard._end()
+    return ()
+end
+
+@external
+func pauseTokenId{
+        syscall_ptr: felt*, 
+        pedersen_ptr: HashBuiltin*, 
+        range_check_ptr
+    }(
+        address: felt,
+        tokenId: Uint256,
+        paused: felt
+    ) -> ():
+    ReentrancyGuard._start()
+
+    let (outFlow)  = txOutFlow_address.read()
+    let (caller)   = get_caller_address()
+
+    with_attr error_message("tokenId not found"):
+        assert outFlow = caller
+    end
+    
+    let (idStruct)          = FLOW_id_streams.read(tokenId)
+
+    with_attr error_message("tokenId not found"):
+        assert_not_zero(idStruct.beneficiary)
+    end
+
+    let (stream)   = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
+
+    with_attr error_message("only owner can call this function"):
+        assert stream.payer = address
+    end
+
+    let (stream)            = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
+    let edited_stream       = MaturityStreamStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=paused)
+    FLOW_in.write(idStruct.beneficiary, idStruct.tokenId, idStruct.idx, edited_stream)
+    
     ReentrancyGuard._end()
     return ()
 end

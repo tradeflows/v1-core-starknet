@@ -23,11 +23,20 @@ async function main() {
     const txFlowContract = await txFlowContractFactory.deploy({
         name: hardhat.starknet.shortStringToBigInt('ERC20 Test txFlow'),
         symbol: hardhat.starknet.shortStringToBigInt('T20xFlow'),
+        owner: owner.address,
         baseToken: erc20Contract.address
+    })
+
+    const txEscrowContractFactory = await hardhat.starknet.getContractFactory('tradeflows/txEscrow')
+    const txEscrowContract = await txEscrowContractFactory.deploy({
+      uri: hardhat.starknet.shortStringToBigInt('USDC txOutFlow'),
+      owner: owner.starknetContract.address,
+      baseFlow: txFlowContract.address
     })
 
     console.log('ERC20:           ', erc20Contract.address)
     console.log('Flow:            ', txFlowContract.address)
+    console.log('Escrow:          ', txEscrowContract.address)
 }
 
 main()
