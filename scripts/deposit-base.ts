@@ -1,6 +1,6 @@
 import hardhat from "hardhat";
 import { toUint256WithFelts, fromUint256WithFelts } from "./starknetUtils"
-import { FEE, walletAddressOwner, walletPrivateOwner, daoContractAddress, txFlowContractAddress, txTradeContractAddress, erc20ContractAddress, walletAddress0, walletPrivate0, walletAddress1, walletPrivate1 } from "./constants";
+import { FEE, walletAddressOwner, walletPrivateOwner, daoContractAddress, txFlowContractAddress, txAssetContractAddress, erc20ContractAddress, walletAddress0, walletPrivate0, walletAddress1, walletPrivate1 } from "./constants";
 
   
 async function main() {
@@ -15,12 +15,12 @@ async function main() {
     
     const daoContractFactory = await hardhat.starknet.getContractFactory('tradeflows/DAO')
     const erc20ContractFactory = await hardhat.starknet.getContractFactory('openzeppelin/token/erc20/ERC20')
-    const txTradeContractFactory = await hardhat.starknet.getContractFactory('tradeflows/txTrade')
+    const txAssetContractFactory = await hardhat.starknet.getContractFactory('tradeflows/txAsset')
     const txFlowContractFactory = await hardhat.starknet.getContractFactory('tradeflows/txFlow')
 
     const daoContract = await daoContractFactory.getContractAt(daoContractAddress)
     const txFlowContract = await txFlowContractFactory.getContractAt(txFlowContractAddress)
-    const txTradeContract = await txTradeContractFactory.getContractAt(txTradeContractAddress)
+    const txAssetContract = await txAssetContractFactory.getContractAt(txAssetContractAddress)
     const erc20Contract = await erc20ContractFactory.getContractAt(erc20ContractAddress)
     
     const amount = toUint256WithFelts('10000')

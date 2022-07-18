@@ -1,6 +1,6 @@
 import hardhat from "hardhat";
 import { toUint256WithFelts, fromUint256WithFelts } from "./starknetUtils"
-import { walletAddressOwner, walletPrivateOwner, daoContractAddress, txFlowContractAddress, txTradeContractAddress, erc20ContractAddress, walletAddress0, walletPrivate0, walletAddress1, walletPrivate1 } from "./constants";
+import { walletAddressOwner, walletPrivateOwner, daoContractAddress, txFlowContractAddress, txAssetContractAddress, erc20ContractAddress, walletAddress0, walletPrivate0, walletAddress1, walletPrivate1 } from "./constants";
 
   
 async function main() {
@@ -12,19 +12,19 @@ async function main() {
     const account1 = (await hardhat.starknet.getAccountFromAddress(walletAddress1, walletPrivate1, 'OpenZeppelin'))
     
     const daoContractFactory = await hardhat.starknet.getContractFactory('tradeflows/DAO')
-    const txTradeContractFactory = await hardhat.starknet.getContractFactory('tradeflows/txTrade')
+    const txAssetContractFactory = await hardhat.starknet.getContractFactory('tradeflows/txAsset')
     const txFlowContractFactory = await hardhat.starknet.getContractFactory('tradeflows/txFlow')
 
     const daoContract = await daoContractFactory.getContractAt(daoContractAddress)
     const txFlowContract = await txFlowContractFactory.getContractAt(txFlowContractAddress)
-    const txTradeContract = await txTradeContractFactory.getContractAt(txTradeContractAddress)
+    const txAssetContract = await txAssetContractFactory.getContractAt(txAssetContractAddress)
     
     let tokenId = toUint256WithFelts("0")
 
     const datao = await owner.call(txFlowContract, "balanceOf", { account: owner.starknetContract.address })
     const data0 = await owner.call(txFlowContract, "balanceOf", { account: account1.starknetContract.address })
     const data1 = await owner.call(txFlowContract, "balanceOf", { account: account1.starknetContract.address })
-    const datan = await owner.call(txFlowContract, "balanceOfNFT", { account: txTradeContract.address, tokenId: tokenId})
+    const datan = await owner.call(txFlowContract, "balanceOfNFT", { account: txAssetContract.address, tokenId: tokenId})
     const datac = await owner.call(txFlowContract, "balanceOf", { account: txFlowContract.address })
     const datad = await owner.call(txFlowContract, "balanceOf", { account: daoContract.address })
 

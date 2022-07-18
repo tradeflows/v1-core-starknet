@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows Flow library for Cairo v0.1.0 (traflows/library/flow.cairo)
+# TradeFlows Flow library for Cairo v0.1.1 (traflows/library/flow.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  
@@ -19,6 +19,7 @@ from starkware.cairo.common.uint256 import (
     Uint256, 
     uint256_eq,
     uint256_le,
+    uint256_lt,
     uint256_check
 )
 from starkware.starknet.common.syscalls import (
@@ -42,7 +43,7 @@ from openzeppelin.token.erc20.interfaces.IERC20 import IERC20
 from openzeppelin.security.safemath import SafeUint256
 from openzeppelin.access.ownable import Ownable
 
-from tradeflows.interfaces.ItxTrade import ItxTrade
+from tradeflows.interfaces.ItxAsset import ItxAsset
 
 # Maturity Stream 
 struct MaturityStreamStructure:
@@ -114,7 +115,7 @@ end
 namespace Flow:
 
     # Set the base token
-    func set_base_token{
+    func setBaseToken{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -128,7 +129,7 @@ namespace Flow:
     end 
 
     # Deposit token
-    func deposit_base{
+    func depositBase{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -153,7 +154,7 @@ namespace Flow:
     end 
 
     # Withdraw token
-    func withdray_base{
+    func withdrawBase{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -205,7 +206,7 @@ namespace Flow:
     end
 
     # Returns the current state.
-    func get_state{
+    func getState{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -222,7 +223,7 @@ namespace Flow:
     end
 
     # Add a new payment stream
-    func add_maturity_stream{
+    func addMaturityStream{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -266,7 +267,7 @@ namespace Flow:
         let (allowance)         = ERC20.allowance(payer_address, contract_address)
 
         with_attr error_message("fee not paid by trade owner"):
-            let (ok) = ItxTrade.canAddPayment(contract_address=beneficiary_address, tokenId=beneficiary_tokenId, tokenAddress=contract_address)
+            let (ok) = ItxAsset.canAddPayment(contract_address=beneficiary_address, tokenId=beneficiary_tokenId, tokenAddress=contract_address)
             assert ok = TRUE
         end
 
@@ -312,7 +313,7 @@ namespace Flow:
     end
 
     # Increase locked amount for an existing stream
-    func increase_amount{
+    func increaseAmount{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -364,7 +365,7 @@ namespace Flow:
     end
 
     # Decrease locked amount for an existing stream
-    func decrease_amount{
+    func decreaseAmount{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -416,7 +417,7 @@ namespace Flow:
     end
 
     # Get the current count of the in streams of the caller wallet
-    func maturity_stream_count_in{
+    func maturityStreamCountIn{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -437,7 +438,7 @@ namespace Flow:
     end
 
     # Get the current count of the out streams of the caller wallet
-    func maturity_stream_count_out{
+    func maturityStreamCountOut{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -453,7 +454,7 @@ namespace Flow:
     end
 
     # Get the stream paid from wallet
-    func stream_in{
+    func streamIn{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -481,7 +482,7 @@ namespace Flow:
     end
 
     # Get the stream paid to wallet
-    func stream_out{
+    func streamOut{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -508,7 +509,7 @@ namespace Flow:
         return (payer=stream.payer, amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time)
     end
 
-    # calculate the amount available and locked
+    # helper: calculate the amount available and locked
     func calc_stream{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
@@ -540,18 +541,20 @@ namespace Flow:
         let (amount_time_elapsed, _)    = SafeUint256.div_rem(stream.target_amount, time_total_uint256)
         let (payout)                    = SafeUint256.mul(amount_time_elapsed, time_elapsed_uint256)
 
-        let (locked)                    = SafeUint256.sub_le(stream.locked_amount, payout)
         
         let (error)                     = uint256_le(stream.locked_amount, payout)
         if error == TRUE:
             return (available_amount=stream.locked_amount, locked_amount=Uint256(0,0))
         end    
+
+        let (locked)                    = SafeUint256.sub_le(stream.locked_amount, payout)
+        
         
         return (available_amount=payout, locked_amount=locked)
     end
 
     # Recursive helper function to get the available and locked amounts to the caller wallet is able to withdraw
-    func aggregated_amount{
+    func aggregatedAmount{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -577,7 +580,7 @@ namespace Flow:
             return (available_amount=uint256_0, locked_amount=uint256_0)
         end
 
-        let (inner_available_amount, inner_locked_amount) = aggregated_amount(beneficiary_address=beneficiary_address, beneficiary_tokenId=beneficiary_tokenId, block_timestamp=block_timestamp, idx=idx-1)
+        let (inner_available_amount, inner_locked_amount) = aggregatedAmount(beneficiary_address=beneficiary_address, beneficiary_tokenId=beneficiary_tokenId, block_timestamp=block_timestamp, idx=idx-1)
         
         let (stream)                    = FLOW_in.read(beneficiary=beneficiary_address, tokenId=beneficiary_tokenId, idx=idx)
 
@@ -601,13 +604,14 @@ namespace Flow:
     end
 
     # Get the available and locked amounts to the caller wallet is able to withdraw
-    func get_withdraw_amount{
+    func getWithdrawAmount{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
         }(
             beneficiary_address: felt,
-            beneficiary_tokenId: Uint256
+            beneficiary_tokenId: Uint256,
+            member_address: felt
         ) -> (
             available_amount: Uint256, 
             locked_amount: Uint256, 
@@ -623,12 +627,14 @@ namespace Flow:
         let (block_timestamp)                   = get_block_timestamp()
         let (count)                             = FLOW_in_count.read(beneficiary=beneficiary_address, tokenId=beneficiary_tokenId)
 
-        let (available_amount, locked_amount)   = aggregated_amount(beneficiary_address, beneficiary_tokenId, block_timestamp, count)
-        
+        let (available_amount, locked_amount)   = aggregatedAmount(beneficiary_address, beneficiary_tokenId, block_timestamp, count)
+
+        let (available_amount, locked_amount)   = weightMembership(beneficiary_address, beneficiary_tokenId, available_amount, locked_amount)
+            
         return (available_amount=available_amount, locked_amount=locked_amount, block_timestamp=block_timestamp)
     end
 
-    # Recursive helper function to get the locked amount to be paid by the caller wallet to others.
+    # helper: Recursive helper function to get the locked amount to be paid by the caller wallet to others.
     func streams_aggregated_locked_amount_out{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
@@ -675,7 +681,7 @@ namespace Flow:
     end
 
     # Get the locked amount to be paid by the caller wallet to others.
-    func locked_amount_out{
+    func lockedAmountOut{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -695,7 +701,7 @@ namespace Flow:
         return (locked_amount=locked_amount, block_timestamp=block_timestamp)
     end
 
-    # Recursive helper function to Withdrawn any available amount.
+    # helper: Recursive helper function to Withdrawn any available amount.
     func withdraw_aggregated_amount{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
@@ -770,6 +776,8 @@ namespace Flow:
                 else:
                     let (payout, locked)                        = calc_stream(stream=stream, block_timestamp=block_timestamp)
 
+                    # let (payout, locked)   = weightMembership(beneficiary_address, beneficiary_tokenId, payout, locked)
+
                     let (total_withdraw)                        = SafeUint256.add(stream.total_withdraw, payout)
 
                     if pause == -1:
@@ -798,6 +806,7 @@ namespace Flow:
         end
     end
 
+
     # Withdrawn any available amount.
     func withdraw{
             syscall_ptr: felt*, 
@@ -825,25 +834,23 @@ namespace Flow:
         let uint256_0 = Uint256(0,0)
 
         let (count)                                  = FLOW_in_count.read(beneficiary=beneficiary_address, tokenId=beneficiary_tokenId)
-        let (available_amount, locked_amount)        = aggregated_amount(beneficiary_address, beneficiary_tokenId, block_timestamp, count-1)
-
+        let (available_amount, locked_amount)        = aggregatedAmount(beneficiary_address, beneficiary_tokenId, block_timestamp, count-1)
+        
         let (is_zero_amount) = uint256_eq(available_amount,uint256_0)
 
         if is_zero_amount == FALSE:
             if is_nft == TRUE:
                 let (beneficiary_address_final)      = IERC721.ownerOf(contract_address=beneficiary_address, tokenId=beneficiary_tokenId)
-                let (_available_amount, _locked_amount)= withdraw_aggregated_amount(beneficiary_address, beneficiary_tokenId, block_timestamp, count-1, pause)
+                let (_available_amount, _)           = withdraw_aggregated_amount(beneficiary_address, beneficiary_tokenId, block_timestamp, count-1, pause)
                 let (caller) = get_caller_address()
-                ERC20_allowances.write(contract_address, caller, available_amount)
-                ERC20.transfer_from(contract_address, beneficiary_address_final, available_amount)
-
-                withdraw_total_called.emit(payer=beneficiary_address_final, amount=available_amount, locked_amount=locked_amount, block_time=block_timestamp)
+                withdrawRecursive(beneficiary_address, beneficiary_tokenId, available_amount)
+                withdraw_total_called.emit(payer=beneficiary_address, amount=available_amount, locked_amount=locked_amount, block_time=block_timestamp)
 
                 return (amount=available_amount, locked_amount=locked_amount)
 
             else:
                 
-                let (_available_amount, _locked_amount)= withdraw_aggregated_amount(beneficiary_address, beneficiary_tokenId, block_timestamp, count-1, pause)
+                let (_available_amount, _)           = withdraw_aggregated_amount(beneficiary_address, beneficiary_tokenId, block_timestamp, count-1, pause)
                 let (caller) = get_caller_address()
                 ERC20_allowances.write(contract_address, caller, available_amount)
                 ERC20.transfer_from(contract_address, beneficiary_address, available_amount)
@@ -858,6 +865,133 @@ namespace Flow:
 
             return (amount=available_amount, locked_amount=locked_amount)
 
+        end
+    end
+
+    # Get the weighted available and locked amounts given a membership.
+    func weightMembership{
+            syscall_ptr: felt*, 
+            pedersen_ptr: HashBuiltin*, 
+            range_check_ptr
+        }(
+            beneficiary_address: felt,
+            beneficiary_tokenId: Uint256,
+            available_amount: Uint256, 
+            locked_amount: Uint256
+        ) -> (
+            available: Uint256, 
+            locked: Uint256
+        ):
+        alloc_locals
+        
+        let (caller_address)                             = get_caller_address()
+        if caller_address == beneficiary_address:
+            return (available_amount, locked_amount)
+        else:
+            let (weight, weight_base)                    = ItxAsset.memberWeight(contract_address=beneficiary_address, tokenId=beneficiary_tokenId, address=caller_address)
+
+            let (available_amount)                       = SafeUint256.mul(available_amount, Uint256(weight,0))
+            let (available_amount, _)                    = SafeUint256.div_rem(available_amount, Uint256(weight_base,0))
+
+
+            
+            let (locked_amount)                          = SafeUint256.mul(locked_amount, Uint256(weight,0))
+            let (locked_amount, _)                       = SafeUint256.div_rem(locked_amount, Uint256(weight_base,0))
+            
+            return (available_amount, locked_amount)
+        end
+    end
+
+    # Withdraw member weighted amounts recursively
+    func withdrawRecursive{
+            syscall_ptr: felt*, 
+            pedersen_ptr: HashBuiltin*, 
+            range_check_ptr
+        }(
+            beneficiary_address: felt,
+            beneficiary_tokenId: Uint256,
+            available_amount: Uint256
+        ) -> ():
+
+        let (caller_address)                         = get_caller_address()
+        let (weight_base)                            = ItxAsset.baseWeight(contract_address=beneficiary_address, tokenId=beneficiary_tokenId)
+        let (wgt_len, wgts)                          = ItxAsset.getWeights(contract_address=beneficiary_address, tokenId=beneficiary_tokenId)
+        let (addrss_len, addrss)                     = ItxAsset.getAddresses(contract_address=beneficiary_address, tokenId=beneficiary_tokenId)
+
+        _withdrawRecursive(weight_base, wgt_len, wgts, addrss_len, addrss, available_amount, Uint256(0,0))
+        return()
+    end
+
+    # helper: Withdraw member weighted amounts recursively
+    func _withdrawRecursive{
+            syscall_ptr: felt*, 
+            pedersen_ptr: HashBuiltin*, 
+            range_check_ptr
+        }(
+            weight_base: felt,
+            wgts_len: felt,
+            wgts: felt*,
+            addrss_len: felt,
+            addrss: felt*,
+            available_amount: Uint256,
+            aggregated_amount: Uint256
+        ) -> ():
+        alloc_locals
+
+        if wgts_len == 0:
+            return ()
+        else:
+            let _wgt                        = [wgts]
+            let _addrss                     = [addrss]
+
+            let (_available_amount)         = SafeUint256.mul(available_amount, Uint256(_wgt,0))
+            let (_available_amount, _rem)   = SafeUint256.div_rem(_available_amount, Uint256(weight_base,0))
+            
+            let (contract_address)          = get_contract_address()
+            let (caller_address)            = get_caller_address()
+
+            let (balance: Uint256)          = ERC20.balance_of(contract_address)
+            
+            let uint256_0                   = Uint256(0,0)
+            let (is_zero_amount)            = uint256_eq(_available_amount,uint256_0)
+            let (is_zero_balance)           = uint256_eq(balance,uint256_0)
+
+            if is_zero_balance * is_zero_amount == TRUE:
+                return ()
+            end
+            
+            let (aggregated_amount)         = SafeUint256.add(aggregated_amount, _available_amount)
+            let (ok_aggregated)             = uint256_le(aggregated_amount, available_amount)
+            
+            if wgts_len == 1:
+                if ok_aggregated == TRUE:
+                    let (diff_amount)       = SafeUint256.sub_le(available_amount, aggregated_amount)
+                    let (new_amount)        = SafeUint256.add(diff_amount, _available_amount)
+
+                    ERC20_allowances.write(contract_address, caller_address, new_amount)
+                    ERC20.transfer_from(contract_address, _addrss, new_amount)
+                    ERC20_allowances.write(contract_address, caller_address, uint256_0)
+                    return()
+                end
+            end
+
+            let (ok_below_balance)          = uint256_le(_available_amount, balance)
+            
+            if ok_below_balance == TRUE:
+                ERC20_allowances.write(contract_address, caller_address, _available_amount)
+                ERC20.transfer_from(contract_address, _addrss, _available_amount)
+                ERC20_allowances.write(contract_address, caller_address, uint256_0)
+
+                _withdrawRecursive(weight_base, wgts_len-1,wgts+1,addrss_len-1,addrss+1, available_amount, aggregated_amount)
+                    
+                return ()
+            else:
+                ERC20_allowances.write(contract_address, caller_address, balance)
+                ERC20.transfer_from(contract_address, _addrss, balance)
+                ERC20_allowances.write(contract_address, caller_address, uint256_0)
+
+                return ()
+            end
         end
     end
 end

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows Trade library for Cairo v0.1.0 (traflows/library/trade.cairo)
+# TradeFlows Trade library for Cairo v0.1.1 (traflows/library/asset.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  
@@ -57,7 +57,7 @@ from tradeflows.interfaces.ItxDharma import ItxDharma
 # Trade functionality
 #
 
-# Event a trade has been initiated
+# Event a asset has been initiated
 @event
 func init_called(tokenId: Uint256, owner: felt, counterpart: felt):
 end
@@ -99,68 +99,131 @@ end
 
 # Storage of the terms (array) of an agreement
 @storage_var
-func agreements_terms(tokenId : Uint256, index : felt) -> (res : felt):
+func assets_meta(tokenId : Uint256, index : felt) -> (res : felt):
 end
 
 # Storage of the length of the terms array of an agreement 
 @storage_var
-func agreements_terms_len(tokenId : Uint256) -> (res : felt):
+func assets_meta_len(tokenId : Uint256) -> (res : felt):
 end
 
 # Storage fees per token / currency
 @storage_var
-func TRADE_fees(address: felt) -> (fee: Uint256):
+func ASSET_fees(address: felt) -> (fee: Uint256):
 end
 
-# Storage of the state of fees being paid for a specific trade
+# Storage of the state of fees being paid for a specific asset
 @storage_var
-func TRADE_paid_fees(tokenId: Uint256, address: felt) -> (success: felt):
+func ASSET_paid_fees(tokenId: Uint256, address: felt) -> (success: felt):
 end
 
-# Storage of the counter of the number of trades per address
+# Storage of the counter of the number of assets per address
 @storage_var
-func TRADE_trade_count(address: felt) -> (count: felt):
+func ASSET_asset_count(address: felt) -> (count: felt):
 end
 
 # Storage of the tokenId given an address and an index
 @storage_var
-func TRADE_trade_idx(address: felt, idx: felt) -> (tokenId: Uint256):
+func ASSET_asset_idx(address: felt, idx: felt) -> (tokenId: Uint256):
 end
 
-namespace Trade:
+# Storage of the member addresses (array) of an agreement
+@storage_var
+func addresses(tokenId : Uint256, index : felt) -> (res : felt):
+end
 
-    # init a trade
+# Storage of the member weights (array) of an agreement
+@storage_var
+func weights(tokenId : Uint256, index : felt) -> (res : felt):
+end
+
+# Storage of the member length of the terms array of an agreement 
+@storage_var
+func weights_len(tokenId : Uint256) -> (res : felt):
+end
+
+# Storage of the base_weight
+@storage_var
+func base_weight(tokenId : Uint256) -> (res : felt):
+end
+
+namespace Asset:
+
+    # init a asset
     func init{
             pedersen_ptr: HashBuiltin*, 
             syscall_ptr: felt*, 
             range_check_ptr
         }(
-            counterpart: felt
+            counterpart: felt,
+            members_len: felt,
+            members: felt*,
+            weights_len: felt,
+            weights: felt*
         ) -> (
             tokenId: Uint256
         ):
+        alloc_locals
         
-        let (caller_address)   = get_caller_address()
+        let (caller_address)        = get_caller_address()
 
-        let (tokenId : Uint256)= id_counter.read()
-        let (next_tokenId)     = SafeUint256.add(tokenId, Uint256(1,0))
+        let (tokenId : Uint256)     = id_counter.read()
+        let (next_tokenId)          = SafeUint256.add(tokenId, Uint256(1,0))
         id_counter.write(next_tokenId)
 
         agreements_provider.write(tokenId, caller_address)
         agreements_counterpart.write(tokenId, counterpart)
 
-        let (t_count)          = TRADE_trade_count.read(counterpart)
+        let (t_count)               = ASSET_asset_count.read(counterpart)
         
-        TRADE_trade_idx.write(counterpart, t_count, tokenId)
-        let new_count          = t_count + 1
-        TRADE_trade_count.write(counterpart, new_count)
+        ASSET_asset_idx.write(counterpart, t_count, tokenId)
+        let new_count               = t_count + 1
+        ASSET_asset_count.write(counterpart, new_count)
+
+        with_attr error_message("members_len must equal to weights_len"):
+            assert members_len = weights_len
+        end
+
+        if members_len == 0:
+            let (local addrs_value) = alloc()
+            assert [addrs_value]    = caller_address
+            let (local wgts_value)  = alloc()
+            assert [wgts_value]     = 1
+            setWeights(tokenId, 1, addrs_value, 1, wgts_value)
+            base_weight.write(tokenId, 1)
+        else:
+            let (_wgts)             = sum(weights_len, weights)
+
+            setWeights(tokenId, members_len, members, weights_len, weights)
+            base_weight.write(tokenId, _wgts)
+        end
 
         init_called.emit(tokenId, caller_address, counterpart)
         
         return (tokenId=tokenId)
     end
 
-    # init agree to a trade
+    func sum{
+            pedersen_ptr: HashBuiltin*, 
+            syscall_ptr: felt*, 
+            range_check_ptr
+        }(
+            weights_len: felt,
+            weights: felt*
+        ) -> (
+            res: felt
+        ):
+        
+        if weights_len == 0:
+            return (0)
+        end
+
+        let wgt   = [weights]
+        let (res) = sum(weights_len-1,weights+1)
+        return (res=wgt+res)
+    end
+
+    # init agree to a asset
     func agree{
             pedersen_ptr: HashBuiltin*, 
             syscall_ptr: felt*, 
@@ -195,7 +258,7 @@ namespace Trade:
         return ()
     end
 
-    # check if trade has been agreed
+    # check if asset has been agreed
     func isAgreed{
             pedersen_ptr: HashBuiltin*, 
             syscall_ptr: felt*, 
@@ -274,7 +337,23 @@ namespace Trade:
         return(address=address)
     end
 
-    # rate a given address and trade (tokenId)
+    # get base weight
+    func getBaseWeight{
+            pedersen_ptr: HashBuiltin*, 
+            syscall_ptr: felt*, 
+            range_check_ptr
+        }(
+            tokenId: Uint256
+        ) ->
+        (
+            weight: felt
+        ):
+        
+        let (weight) = base_weight.read(tokenId)
+        return(weight=weight)
+    end
+
+    # rate a given address and asset (tokenId)
     func rate{
             pedersen_ptr: HashBuiltin*, 
             syscall_ptr: felt*, 
@@ -336,8 +415,8 @@ namespace Trade:
         return ()
     end
 
-    # get agreement terms
-    func agreement_terms{
+    # get meta
+    func assetMeta{
             syscall_ptr : felt*, 
             pedersen_ptr : HashBuiltin*, 
             range_check_ptr
@@ -360,17 +439,17 @@ namespace Trade:
             assert exists = TRUE
         end
 
-        let (local agreement_terms_len) = agreements_terms_len.read(tokenId)
+        let (local agreement_terms_len) = assets_meta_len.read(tokenId)
 
         let (local agreement_terms_value) = alloc()
 
-        _agreement_terms(tokenId, agreement_terms_len, agreement_terms_value)
+        _asset_meta(tokenId, agreement_terms_len, agreement_terms_value)
 
         return (agreement_terms_len, agreement_terms_value)
     end
 
-    # set agreement terms
-    func set_agreement_terms{
+    # set meta
+    func setMeta{
             syscall_ptr : felt*, 
             pedersen_ptr : HashBuiltin*, 
             range_check_ptr
@@ -386,13 +465,13 @@ namespace Trade:
             assert exists = TRUE
         end
 
-        _set_terms(tokenId, agreement_terms_len, agreement_terms)
-        agreements_terms_len.write(tokenId, agreement_terms_len)
+        _set_asset_meta(tokenId, agreement_terms_len, agreement_terms)
+        assets_meta_len.write(tokenId, agreement_terms_len)
         return ()
     end
 
     # reset agreement terms
-    func reset_agreements_terms{
+    func resetMeta{
             syscall_ptr : felt*, 
             pedersen_ptr : HashBuiltin*, 
             range_check_ptr
@@ -404,12 +483,12 @@ namespace Trade:
             uint256_check(tokenId)
         end
 
-        set_agreement_terms(tokenId, 0, &[0])
+        setMeta(tokenId, 0, &[0])
         return ()
     end
 
     # helper: get agreement terms
-    func _agreement_terms{
+    func _asset_meta{
             syscall_ptr : felt*, 
             pedersen_ptr : HashBuiltin*, 
             range_check_ptr
@@ -423,14 +502,14 @@ namespace Trade:
             return ()
         end
 
-        let (agreement_terms_value_at_index) = agreements_terms.read(tokenId, agreement_terms_len)
+        let (agreement_terms_value_at_index) = assets_meta.read(tokenId, agreement_terms_len)
         assert [agreement_terms] = agreement_terms_value_at_index
-        _agreement_terms(tokenId, agreement_terms_len - 1, agreement_terms + 1)
+        _asset_meta(tokenId, agreement_terms_len - 1, agreement_terms + 1)
         return ()
     end
 
     # helper: set agreement terms
-    func _set_terms{
+    func _set_asset_meta{
             syscall_ptr : felt*, 
             pedersen_ptr : HashBuiltin*, 
             range_check_ptr
@@ -444,13 +523,13 @@ namespace Trade:
             return ()
         end
 
-        agreements_terms.write(tokenId, agreement_terms_len, [agreement_terms])
-        _set_terms(tokenId, agreement_terms_len - 1, agreement_terms + 1)
+        assets_meta.write(tokenId, agreement_terms_len, [agreement_terms])
+        _set_asset_meta(tokenId, agreement_terms_len - 1, agreement_terms + 1)
         return ()
     end
 
     # charge fees
-    func charge_fee{
+    func chargeFee{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -477,7 +556,7 @@ namespace Trade:
         end
 
         with_attr error_message("fee not set"):
-            let (amount)            = TRADE_fees.read(tok)
+            let (amount)            = ASSET_fees.read(tok)
         end
 
         with_attr error_message("amount must be greater than 0"):
@@ -489,10 +568,256 @@ namespace Trade:
         
         IERC20.transferFrom(contract_address=tok, sender=caller_address, recipient=dao, amount=amount)
 
-        TRADE_paid_fees.write(tokenId, tok, 1)
+        ASSET_paid_fees.write(tokenId, tok, 1)
         
-        charge_fee(tokenId=tokenId, tokens_len=tokens_len-1,tokens=tokens+1)
+        chargeFee(tokenId=tokenId, tokens_len=tokens_len-1,tokens=tokens+1)
 
+        return ()
+    end
+
+    # set weights
+    func setWeights{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256, 
+            addrss_len : felt, 
+            addrss : felt*,
+            wgts_len : felt, 
+            wgts : felt*
+        ):
+
+        uint256_check(tokenId)
+        
+        with_attr error_message("address length must equal to weights length"):
+            assert addrss_len = wgts_len
+        end
+
+        _set_weights(tokenId, wgts_len, wgts)
+        _set_addresses(tokenId, wgts_len, addrss)
+        weights_len.write(tokenId, wgts_len)
+        return ()
+    end
+
+    # get weights
+    func getWeights{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256
+        ) -> (
+            wgts_len : felt, 
+            wgts : felt*
+        ):
+        alloc_locals
+
+        # ensure valid uint256
+        with_attr error_message("tokenId is not a valid Uint256"):
+            uint256_check(tokenId)
+        end
+
+        # ensure token with token_id exists
+        let (exists) = ERC721._exists(tokenId)
+        with_attr error_message("nonexistent token"):
+            assert exists = TRUE
+        end
+
+        let (local wgts_len) = weights_len.read(tokenId)
+
+        let (local wgts_value) = alloc()
+
+        _weights(tokenId, wgts_len, wgts_value)
+
+        return (wgts_len, wgts_value)
+    end
+
+    # get addresses
+    func getAddresses{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256
+        ) -> (
+            addrs_len : felt, 
+            addrs : felt*
+        ):
+        alloc_locals
+
+        # ensure valid uint256
+        with_attr error_message("tokenId is not a valid Uint256"):
+            uint256_check(tokenId)
+        end
+
+        # ensure token with token_id exists
+        let (exists) = ERC721._exists(tokenId)
+        with_attr error_message("nonexistent token"):
+            assert exists = TRUE
+        end
+
+        let (local addrs_len) = weights_len.read(tokenId)
+
+        let (local addrs_value) = alloc()
+
+        _addresses(tokenId, addrs_len, addrs_value)
+
+        return (addrs_len, addrs_value)
+    end
+
+    # get weight
+    func getWeight{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256,
+            address: felt
+        ) -> (
+            weight : felt,
+            weight_base: felt
+        ):
+        alloc_locals
+
+        # ensure valid uint256
+        with_attr error_message("tokenId is not a valid Uint256"):
+            uint256_check(tokenId)
+        end
+
+        # ensure token with token_id exists
+        let (exists)                    = ERC721._exists(tokenId)
+        with_attr error_message("nonexistent token"):
+            assert exists = TRUE
+        end
+
+        let (addrss_len, addrss)        = getAddresses(tokenId)
+        let (wgts_len, wgts)            = getWeights(tokenId)
+
+        with_attr error_message("address length is not equal to weights length"):
+            assert wgts_len = addrss_len
+        end
+
+
+        let (weight)                    = _get_weight(address, wgts_len, wgts, addrss)
+        let (_weight_base)              = base_weight.read(tokenId)
+
+        with_attr error_message("weight cannot be 0"):
+            assert_nn(weight)
+        end
+
+        
+
+        return (weight=weight, weight_base=_weight_base)
+    end
+
+    # helper: get weights
+    func _get_weight{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            address: felt,
+            wgts_len: felt,
+            wgts: felt*,
+            addrss: felt*
+            
+        ) -> (
+            weight : felt
+        ):
+        if wgts_len == 0:
+            return (weight=0)
+        end
+
+        let _addrss = [addrss]
+        let _wgt    = [wgts]
+        
+        if address == _addrss:
+            return (weight=_wgt)
+        else:
+            let (weight) = _get_weight(address, wgts_len-1, wgts+1, addrss+1)
+            return (weight=weight)
+        end
+    end
+
+    # helper: set weights
+    func _set_weights{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256, 
+            wgts_len : felt, 
+            wgts : felt*
+        ):
+
+        if wgts_len == 0:
+            return ()
+        end
+
+        weights.write(tokenId, wgts_len, [wgts])
+        _set_weights(tokenId, wgts_len - 1, wgts + 1)
+        return ()
+    end
+
+    # helper: set addresses
+    func _set_addresses{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256, 
+            addrss_len : felt, 
+            addrss : felt*
+        ):
+
+        if addrss_len == 0:
+            return ()
+        end
+
+        addresses.write(tokenId, addrss_len, [addrss])
+        _set_addresses(tokenId, addrss_len - 1, addrss + 1)
+        return ()
+    end
+
+    # helper: get weights
+    func _weights{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256, 
+            wgts_len : felt, 
+            wgts : felt*
+        ):
+
+        if wgts_len == 0:
+            return ()
+        end
+
+        let (wgts_value_at_index) = weights.read(tokenId, wgts_len)
+        assert [wgts] = wgts_value_at_index
+        _weights(tokenId, wgts_len - 1, wgts + 1)
+        return ()
+    end
+
+    func _addresses{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256, 
+            addrss_len : felt, 
+            addrss : felt*
+        ):
+
+        if addrss_len == 0:
+            return ()
+        end
+
+        let (addrss_value_at_index) = addresses.read(tokenId, addrss_len)
+        assert [addrss] = addrss_value_at_index
+        _addresses(tokenId, addrss_len - 1, addrss + 1)
         return ()
     end
 end

@@ -25,10 +25,10 @@ async function main() {
       owner: owner.starknetContract.address
     })
     
-    const txTradeContractFactory = await hardhat.starknet.getContractFactory('tradeflows/txTrade')
-    const txTradeContract = await txTradeContractFactory.deploy({
+    const txAssetContractFactory = await hardhat.starknet.getContractFactory('tradeflows/txAsset')
+    const txAssetContract = await txAssetContractFactory.deploy({
       name: hardhat.starknet.shortStringToBigInt('TradeFlows Deal NFT'),
-      symbol: hardhat.starknet.shortStringToBigInt('txTrade'),
+      symbol: hardhat.starknet.shortStringToBigInt('txAsset'),
       owner: owner.starknetContract.address,
       txDharma_address: txDharmaContract.address,
       dao_address: daoContract.address
@@ -39,7 +39,7 @@ async function main() {
     console.log('      Private: ', owner.privateKey)
     console.log('DAO:           ', daoContract.address)
     console.log('txDharma:      ', txDharmaContract.address)
-    console.log('txTrade:       ', txTradeContract.address)
+    console.log('txAsset:       ', txAssetContract.address)
 }
 
 main()

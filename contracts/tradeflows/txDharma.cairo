@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows ERC20 Dharma / Rating Contracts for Cairo v0.1.0 (traflows/txDharma.cairo)
+# TradeFlows ERC20 Dharma / Rating Contracts for Cairo v0.1.1 (traflows/txDharma.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  
