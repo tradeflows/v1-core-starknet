@@ -24,7 +24,7 @@ from openzeppelin.token.erc20.interfaces.IERC20 import IERC20
 from openzeppelin.security.safemath import SafeUint256
 from openzeppelin.access.ownable import Ownable
 
-from tradeflows.library.flow import FLOW_in, FLOW_in_count, FLOW_base_token, FLOW_id_streams, MaturityStreamStructure, Flow
+from tradeflows.library.flow import FLOW_in, FLOW_in_count, FLOW_base_token, FLOW_id_streams, FLOW_OutFlow_address, MaturityStreamStructure, Flow
 from tradeflows.library.asset import Asset
 
 
@@ -497,9 +497,7 @@ end
 # Externals
 #
 
-@storage_var
-func txOutFlow_address() -> (address: felt):
-end
+
 
 # Set OutFlow address
 @external
@@ -509,7 +507,7 @@ func setOutFlowAddress{
         range_check_ptr
     }(address: felt):
     Ownable.assert_only_owner()
-    txOutFlow_address.write(address)
+    FLOW_OutFlow_address.write(address)
     return ()
 end
 
@@ -729,7 +727,7 @@ func lockedTokenId{
     if stream.payer == address: 
 
         let (block_timestamp)               = get_block_timestamp()    
-        let (available_amount, locked_amount)= Flow.calc_stream(stream, block_timestamp)
+        let (available_amount,locked_amount)= Flow.calc_stream(stream, block_timestamp)
         
         return (locked_amount=locked_amount, block_timestamp=block_timestamp)
     else:
@@ -751,7 +749,7 @@ func increaseTokenId{
     ) -> ():
     ReentrancyGuard._start()
 
-    let (outFlow)  = txOutFlow_address.read()
+    let (outFlow)  = FLOW_OutFlow_address.read()
     let (caller)   = get_caller_address()
 
     with_attr error_message("tokenId not found"):
@@ -769,7 +767,6 @@ func increaseTokenId{
     with_attr error_message("only owner can call this function"):
         assert stream.payer = address
     end
-
 
     Flow.increaseAmount(idStruct.beneficiary, idStruct.tokenId, idStruct.idx, amount)
     ReentrancyGuard._end()
@@ -789,7 +786,7 @@ func decreaseTokenId{
     ) -> ():
     ReentrancyGuard._start()
 
-    let (outFlow)  = txOutFlow_address.read()
+    let (outFlow)  = FLOW_OutFlow_address.read()
     let (caller)   = get_caller_address()
 
     with_attr error_message("tokenId not found"):
@@ -825,27 +822,27 @@ func pauseTokenId{
     ) -> ():
     ReentrancyGuard._start()
 
-    let (outFlow)  = txOutFlow_address.read()
-    let (caller)   = get_caller_address()
+    let (outFlow)     = FLOW_OutFlow_address.read()
+    let (caller)      = get_caller_address()
 
     with_attr error_message("tokenId not found"):
         assert outFlow = caller
     end
     
-    let (idStruct)          = FLOW_id_streams.read(tokenId)
+    let (idStruct)    = FLOW_id_streams.read(tokenId)
 
     with_attr error_message("tokenId not found"):
         assert_not_zero(idStruct.beneficiary)
     end
 
-    let (stream)   = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
+    let (stream)      = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
 
     with_attr error_message("only owner can call this function"):
         assert stream.payer = address
     end
 
-    let (stream)            = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
-    let edited_stream       = MaturityStreamStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=paused)
+    let (stream)      = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
+    let edited_stream = MaturityStreamStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=paused)
     FLOW_in.write(idStruct.beneficiary, idStruct.tokenId, idStruct.idx, edited_stream)
     
     ReentrancyGuard._end()

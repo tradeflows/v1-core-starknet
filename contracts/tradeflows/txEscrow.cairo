@@ -189,7 +189,6 @@ func increase{
     IERC20.transferFrom(contract_address=base_address, sender=account, recipient=contract, amount=amount)
     IERC20.approve(contract_address=base_address, spender=base_address, amount=amount)
 
-
     ItxFlow.increaseTokenId(contract_address=base_address, address=account, tokenId=tokenId, amount=amount)
     
     return ()
@@ -207,9 +206,28 @@ func decrease{
     ):
 
     let (account)      = get_caller_address()
-
     let (base_address) = OUTFLOW_baseFlow.read()
+
     ItxFlow.decreaseTokenId(contract_address=base_address, address=account, tokenId=tokenId, amount=amount)
+    
+    return ()
+end
+
+# Pause a flow
+@external
+func pause{
+        syscall_ptr : felt*, 
+        pedersen_ptr : HashBuiltin*, 
+        range_check_ptr
+    }(
+        tokenId: Uint256,
+        paused: felt
+    ):
+
+    let (account)      = get_caller_address()
+    let (base_address) = OUTFLOW_baseFlow.read()
+    
+    ItxFlow.pauseTokenId(contract_address=base_address, address=account, tokenId=tokenId, paused=paused)
     
     return ()
 end

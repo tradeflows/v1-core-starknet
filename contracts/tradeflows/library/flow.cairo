@@ -128,6 +128,10 @@ end
 func FLOW_id_streams(tokenId: Uint256) -> (idStructure: MaturityStreamIDStructure):
 end
 
+@storage_var
+func FLOW_OutFlow_address() -> (address: felt):
+end
+
 
 namespace Flow:
 
@@ -429,9 +433,12 @@ namespace Flow:
             let (new_amount)    = SafeUint256.sub_le(stream.locked_amount, amount)
         end
 
+        let (outflow_address)   = FLOW_OutFlow_address.read()
         # ERC20_allowances.write(contract_address, payer_address, amount)
         # ERC20.transfer_from(contract_address, payer_address, amount)
-        ERC20_allowances.write(contract_address, stream.payer, amount)
+        # ERC20_allowances.write(contract_address, stream.payer, amount)
+        ERC20_allowances.write(contract_address, outflow_address, amount)
+        
         ERC20.transfer_from(contract_address, stream.payer, amount)        
 
         let edited_stream       = MaturityStreamStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, locked_amount=new_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.locked_amount, start_time=stream.start_time, last_reset_time=block_timestamp, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused)
@@ -1002,21 +1009,21 @@ namespace Flow:
 
             let (ok_below_balance)          = uint256_le(_available_amount, balance)
             
-            if ok_below_balance == TRUE:
-                ERC20_allowances.write(contract_address, caller_address, _available_amount)
-                ERC20.transfer_from(contract_address, _addrss, _available_amount)
-                ERC20_allowances.write(contract_address, caller_address, uint256_0)
+            # if ok_below_balance == TRUE:
+            ERC20_allowances.write(contract_address, caller_address, _available_amount)
+            ERC20.transfer_from(contract_address, _addrss, _available_amount)
+            ERC20_allowances.write(contract_address, caller_address, uint256_0)
 
-                _withdrawRecursive(weight_base, wgts_len-1,wgts+1,addrss_len-1,addrss+1, available_amount, aggregated_amount)
-                    
-                return ()
-            else:
-                ERC20_allowances.write(contract_address, caller_address, balance)
-                ERC20.transfer_from(contract_address, _addrss, balance)
-                ERC20_allowances.write(contract_address, caller_address, uint256_0)
+            _withdrawRecursive(weight_base, wgts_len-1,wgts+1,addrss_len-1,addrss+1, available_amount, aggregated_amount)
+                
+            return ()
+            # else:
+            #     ERC20_allowances.write(contract_address, caller_address, balance)
+            #     ERC20.transfer_from(contract_address, _addrss, balance)
+            #     ERC20_allowances.write(contract_address, caller_address, uint256_0)
 
-                return ()
-            end
+            #     return ()
+            # end
         end
     end
 end
