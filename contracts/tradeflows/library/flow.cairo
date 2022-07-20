@@ -372,10 +372,6 @@ namespace Flow:
 
         let (stream)            = FLOW_in.read(beneficiary_address, beneficiary_tokenId, id)
 
-        # with_attr error_message("only the payer can ammend the stream"):
-        #     assert stream.payer = payer_address
-        # end
-
         let (new_amount)        = SafeUint256.add(stream.locked_amount, amount)
 
         with_attr error_message("amount must be less than target amount"):
@@ -424,19 +420,11 @@ namespace Flow:
 
         let (stream)            = FLOW_in.read(beneficiary_address, beneficiary_tokenId, id)
 
-        # with_attr error_message("only the payer can ammend the stream"):
-        #     assert stream.payer = payer_address
-        # end
-
-
         with_attr error_message("amount must be less or equal to locked amount"):
             let (new_amount)    = SafeUint256.sub_le(stream.locked_amount, amount)
         end
 
         let (outflow_address)   = FLOW_OutFlow_address.read()
-        # ERC20_allowances.write(contract_address, payer_address, amount)
-        # ERC20.transfer_from(contract_address, payer_address, amount)
-        # ERC20_allowances.write(contract_address, stream.payer, amount)
         ERC20_allowances.write(contract_address, outflow_address, amount)
         
         ERC20.transfer_from(contract_address, stream.payer, amount)        
@@ -667,7 +655,7 @@ namespace Flow:
     end
 
     # helper: Recursive helper function to get the locked amount to be paid by the caller wallet to others.
-    func streams_aggregated_locked_amount_out{
+    func _streams_aggregated_locked_amount_out{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -686,7 +674,7 @@ namespace Flow:
         end
 
 
-        let (inner_locked_amount)       = streams_aggregated_locked_amount_out(payer_address=payer_address, block_timestamp=block_timestamp, idx=idx-1)
+        let (inner_locked_amount)       = _streams_aggregated_locked_amount_out(payer_address=payer_address, block_timestamp=block_timestamp, idx=idx-1)
 
         let (beneficiary_address)       = FLOW_out_address.read(payer=payer_address, idx=idx)
         let (beneficiary_tokenId)       = FLOW_out_tokenId.read(payer=payer_address, idx=idx)
@@ -728,13 +716,13 @@ namespace Flow:
         let (block_timestamp)           = get_block_timestamp()
         let (count)                     = FLOW_out_count.read(payer=payer_address)
 
-        let (locked_amount)             = streams_aggregated_locked_amount_out(payer_address, block_timestamp, count)
+        let (locked_amount)             = _streams_aggregated_locked_amount_out(payer_address, block_timestamp, count)
         
         return (locked_amount=locked_amount, block_timestamp=block_timestamp)
     end
 
     # helper: Recursive helper function to Withdrawn any available amount.
-    func withdraw_aggregated_amount{
+    func _withdraw_aggregated_amount{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -761,7 +749,7 @@ namespace Flow:
             return (available_amount=uint256_0, locked_amount=uint256_0)
         end
 
-        let (inner_available_amount, inner_locked_amount)       = withdraw_aggregated_amount(beneficiary_address=beneficiary_address, beneficiary_tokenId=beneficiary_tokenId, block_timestamp=block_timestamp, idx=idx-1, pause=pause)
+        let (inner_available_amount, inner_locked_amount)       = _withdraw_aggregated_amount(beneficiary_address=beneficiary_address, beneficiary_tokenId=beneficiary_tokenId, block_timestamp=block_timestamp, idx=idx-1, pause=pause)
         
         let (stream)                                            = FLOW_in.read(beneficiary=beneficiary_address, tokenId=beneficiary_tokenId, idx=idx)
         
@@ -873,7 +861,7 @@ namespace Flow:
         if is_zero_amount == FALSE:
             if is_nft == TRUE:
                 let (beneficiary_address_final)      = IERC721.ownerOf(contract_address=beneficiary_address, tokenId=beneficiary_tokenId)
-                let (_available_amount, _)           = withdraw_aggregated_amount(beneficiary_address, beneficiary_tokenId, block_timestamp, count-1, pause)
+                let (_available_amount, _)           = _withdraw_aggregated_amount(beneficiary_address, beneficiary_tokenId, block_timestamp, count-1, pause)
                 let (caller) = get_caller_address()
                 withdrawRecursive(beneficiary_address, beneficiary_tokenId, available_amount)
                 withdraw_total_called.emit(payer=beneficiary_address, amount=available_amount, locked_amount=locked_amount, block_time=block_timestamp)
@@ -882,7 +870,7 @@ namespace Flow:
 
             else:
                 
-                let (_available_amount, _)           = withdraw_aggregated_amount(beneficiary_address, beneficiary_tokenId, block_timestamp, count-1, pause)
+                let (_available_amount, _)           = _withdraw_aggregated_amount(beneficiary_address, beneficiary_tokenId, block_timestamp, count-1, pause)
                 let (caller) = get_caller_address()
                 ERC20_allowances.write(contract_address, caller, available_amount)
                 ERC20.transfer_from(contract_address, beneficiary_address, available_amount)
@@ -1009,7 +997,6 @@ namespace Flow:
 
             let (ok_below_balance)          = uint256_le(_available_amount, balance)
             
-            # if ok_below_balance == TRUE:
             ERC20_allowances.write(contract_address, caller_address, _available_amount)
             ERC20.transfer_from(contract_address, _addrss, _available_amount)
             ERC20_allowances.write(contract_address, caller_address, uint256_0)
@@ -1017,13 +1004,6 @@ namespace Flow:
             _withdrawRecursive(weight_base, wgts_len-1,wgts+1,addrss_len-1,addrss+1, available_amount, aggregated_amount)
                 
             return ()
-            # else:
-            #     ERC20_allowances.write(contract_address, caller_address, balance)
-            #     ERC20.transfer_from(contract_address, _addrss, balance)
-            #     ERC20_allowances.write(contract_address, caller_address, uint256_0)
-
-            #     return ()
-            # end
         end
     end
 end
