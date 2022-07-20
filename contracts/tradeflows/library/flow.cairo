@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows Flow library for Cairo v0.1.1 (traflows/library/flow.cairo)
+# TradeFlows Flow library for Cairo v0.2.0 (traflows/library/flow.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  
@@ -61,6 +61,13 @@ struct MaturityStreamStructure:
     member is_paused        : felt
 end
 
+# Maturity Stream ID
+struct MaturityStreamIDStructure:
+    member beneficiary      : felt
+    member tokenId          : Uint256
+    member idx              : felt
+end
+
 # Event that an interim withdraw has occurred
 @event
 func withdraw_called(payer: felt, amount: Uint256, locked_amount: Uint256, total_withdraw: Uint256, start_time: felt, maturity_time: felt, block_time: felt):
@@ -73,7 +80,7 @@ end
 
 # Event that a maturity stream has been added
 @event
-func add_maturity_stream_called(flow_id: felt, payer: felt, target_amount: Uint256, initial_amount: Uint256, count: felt, start_time: felt, last_reset_time: felt, maturity_time: felt):
+func add_maturity_stream_called(tokenId: Uint256, flow_id: felt, payer: felt, target_amount: Uint256, initial_amount: Uint256, count: felt, start_time: felt, last_reset_time: felt, maturity_time: felt):
 end
 
 # Storage of the counter of the number of streams to be payed TO a given user.
@@ -109,6 +116,20 @@ end
 # Storage of the base token address
 @storage_var
 func FLOW_base_token() -> (token_address: felt):
+end
+
+# Storage of the number of NFTs minted which is used as a counter
+@storage_var
+func id_counter() -> (counter: Uint256):
+end
+
+# Storage of the stream given the receivers address and the stream's index.
+@storage_var
+func FLOW_id_streams(tokenId: Uint256) -> (idStructure: MaturityStreamIDStructure):
+end
+
+@storage_var
+func FLOW_OutFlow_address() -> (address: felt):
 end
 
 
@@ -236,7 +257,7 @@ namespace Flow:
             maturity: felt,
             is_nft: felt
         ) -> (
-            caller_address : felt
+            tokenId : Uint256
         ):
 
         alloc_locals
@@ -305,11 +326,17 @@ namespace Flow:
         let new_custody_count_to= custody_count_to + 1
         FLOW_out_count.write(contract_address, new_custody_count_to)
         
-        add_maturity_stream_called.emit(flow_id= count, payer=payer_address, target_amount=target_amount, initial_amount=initial_amount, count=new_count, start_time=start, last_reset_time=start, maturity_time=maturity)
-        
+
+        let (tokenId : Uint256)     = id_counter.read()
+        let (next_tokenId)          = SafeUint256.add(tokenId, Uint256(1,0))
+        id_counter.write(next_tokenId)
+        FLOW_id_streams.write(tokenId, MaturityStreamIDStructure(beneficiary_address, beneficiary_tokenId, count))
+
+        add_maturity_stream_called.emit(tokenId=tokenId, flow_id= count, payer=payer_address, target_amount=target_amount, initial_amount=initial_amount, count=new_count, start_time=start, last_reset_time=start, maturity_time=maturity)
         ERC20.transfer(contract_address, initial_amount)
 
-        return (caller_address=payer_address)
+
+        return (tokenId=tokenId)
     end
 
     # Increase locked amount for an existing stream
@@ -345,10 +372,6 @@ namespace Flow:
 
         let (stream)            = FLOW_in.read(beneficiary_address, beneficiary_tokenId, id)
 
-        with_attr error_message("only the payer can ammend the stream"):
-            assert stream.payer = payer_address
-        end
-
         let (new_amount)        = SafeUint256.add(stream.locked_amount, amount)
 
         with_attr error_message("amount must be less than target amount"):
@@ -357,6 +380,7 @@ namespace Flow:
         end
 
         ERC20.transfer(contract_address, amount)
+
         let edited_stream       = MaturityStreamStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, locked_amount=new_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused)
         FLOW_in.write(beneficiary_address, beneficiary_tokenId, id, edited_stream)
 
@@ -396,18 +420,14 @@ namespace Flow:
 
         let (stream)            = FLOW_in.read(beneficiary_address, beneficiary_tokenId, id)
 
-        with_attr error_message("only the payer can ammend the stream"):
-            assert stream.payer = payer_address
-        end
-
-
         with_attr error_message("amount must be less or equal to locked amount"):
             let (new_amount)    = SafeUint256.sub_le(stream.locked_amount, amount)
         end
 
-        ERC20_allowances.write(contract_address, payer_address, amount)
-        ERC20.transfer_from(contract_address, payer_address, amount)
-
+        let (outflow_address)   = FLOW_OutFlow_address.read()
+        ERC20_allowances.write(contract_address, outflow_address, amount)
+        
+        ERC20.transfer_from(contract_address, stream.payer, amount)        
 
         let edited_stream       = MaturityStreamStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, locked_amount=new_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.locked_amount, start_time=stream.start_time, last_reset_time=block_timestamp, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused)
         FLOW_in.write(beneficiary_address, beneficiary_tokenId, id, edited_stream)
@@ -635,7 +655,7 @@ namespace Flow:
     end
 
     # helper: Recursive helper function to get the locked amount to be paid by the caller wallet to others.
-    func streams_aggregated_locked_amount_out{
+    func _streams_aggregated_locked_amount_out{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -654,7 +674,7 @@ namespace Flow:
         end
 
 
-        let (inner_locked_amount)       = streams_aggregated_locked_amount_out(payer_address=payer_address, block_timestamp=block_timestamp, idx=idx-1)
+        let (inner_locked_amount)       = _streams_aggregated_locked_amount_out(payer_address=payer_address, block_timestamp=block_timestamp, idx=idx-1)
 
         let (beneficiary_address)       = FLOW_out_address.read(payer=payer_address, idx=idx)
         let (beneficiary_tokenId)       = FLOW_out_tokenId.read(payer=payer_address, idx=idx)
@@ -696,13 +716,13 @@ namespace Flow:
         let (block_timestamp)           = get_block_timestamp()
         let (count)                     = FLOW_out_count.read(payer=payer_address)
 
-        let (locked_amount)             = streams_aggregated_locked_amount_out(payer_address, block_timestamp, count)
+        let (locked_amount)             = _streams_aggregated_locked_amount_out(payer_address, block_timestamp, count)
         
         return (locked_amount=locked_amount, block_timestamp=block_timestamp)
     end
 
     # helper: Recursive helper function to Withdrawn any available amount.
-    func withdraw_aggregated_amount{
+    func _withdraw_aggregated_amount{
             syscall_ptr: felt*, 
             pedersen_ptr: HashBuiltin*, 
             range_check_ptr
@@ -729,7 +749,7 @@ namespace Flow:
             return (available_amount=uint256_0, locked_amount=uint256_0)
         end
 
-        let (inner_available_amount, inner_locked_amount)       = withdraw_aggregated_amount(beneficiary_address=beneficiary_address, beneficiary_tokenId=beneficiary_tokenId, block_timestamp=block_timestamp, idx=idx-1, pause=pause)
+        let (inner_available_amount, inner_locked_amount)       = _withdraw_aggregated_amount(beneficiary_address=beneficiary_address, beneficiary_tokenId=beneficiary_tokenId, block_timestamp=block_timestamp, idx=idx-1, pause=pause)
         
         let (stream)                                            = FLOW_in.read(beneficiary=beneficiary_address, tokenId=beneficiary_tokenId, idx=idx)
         
@@ -841,7 +861,7 @@ namespace Flow:
         if is_zero_amount == FALSE:
             if is_nft == TRUE:
                 let (beneficiary_address_final)      = IERC721.ownerOf(contract_address=beneficiary_address, tokenId=beneficiary_tokenId)
-                let (_available_amount, _)           = withdraw_aggregated_amount(beneficiary_address, beneficiary_tokenId, block_timestamp, count-1, pause)
+                let (_available_amount, _)           = _withdraw_aggregated_amount(beneficiary_address, beneficiary_tokenId, block_timestamp, count-1, pause)
                 let (caller) = get_caller_address()
                 withdrawRecursive(beneficiary_address, beneficiary_tokenId, available_amount)
                 withdraw_total_called.emit(payer=beneficiary_address, amount=available_amount, locked_amount=locked_amount, block_time=block_timestamp)
@@ -850,7 +870,7 @@ namespace Flow:
 
             else:
                 
-                let (_available_amount, _)           = withdraw_aggregated_amount(beneficiary_address, beneficiary_tokenId, block_timestamp, count-1, pause)
+                let (_available_amount, _)           = _withdraw_aggregated_amount(beneficiary_address, beneficiary_tokenId, block_timestamp, count-1, pause)
                 let (caller) = get_caller_address()
                 ERC20_allowances.write(contract_address, caller, available_amount)
                 ERC20.transfer_from(contract_address, beneficiary_address, available_amount)
@@ -977,21 +997,13 @@ namespace Flow:
 
             let (ok_below_balance)          = uint256_le(_available_amount, balance)
             
-            if ok_below_balance == TRUE:
-                ERC20_allowances.write(contract_address, caller_address, _available_amount)
-                ERC20.transfer_from(contract_address, _addrss, _available_amount)
-                ERC20_allowances.write(contract_address, caller_address, uint256_0)
+            ERC20_allowances.write(contract_address, caller_address, _available_amount)
+            ERC20.transfer_from(contract_address, _addrss, _available_amount)
+            ERC20_allowances.write(contract_address, caller_address, uint256_0)
 
-                _withdrawRecursive(weight_base, wgts_len-1,wgts+1,addrss_len-1,addrss+1, available_amount, aggregated_amount)
-                    
-                return ()
-            else:
-                ERC20_allowances.write(contract_address, caller_address, balance)
-                ERC20.transfer_from(contract_address, _addrss, balance)
-                ERC20_allowances.write(contract_address, caller_address, uint256_0)
-
-                return ()
-            end
+            _withdrawRecursive(weight_base, wgts_len-1,wgts+1,addrss_len-1,addrss+1, available_amount, aggregated_amount)
+                
+            return ()
         end
     end
 end

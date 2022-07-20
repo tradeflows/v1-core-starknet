@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows ERC20 Dharma / Rating Contracts for Cairo v0.1.1 (traflows/txDharma.cairo)
+# TradeFlows ERC20 Dharma / Rating Contracts for Cairo v0.2.0 (traflows/txDharma.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  
@@ -178,7 +178,7 @@ func mint{
 
     alloc_locals
     let (contract_address)  = get_caller_address()
-    let (trade_address)     = txTrade_address.read()
+    let (trade_address)     = txAsset_address.read()
 
     with_attr error_message("only the Trade Contract can call mint"):
         assert contract_address = trade_address
@@ -198,7 +198,7 @@ func burn{
 
     alloc_locals
     let (contract_address)  = get_caller_address()
-    let (trade_address)     = txTrade_address.read()
+    let (trade_address)     = txAsset_address.read()
 
     with_attr error_message("only the Trade Contract can call burn"):
         assert contract_address = trade_address
@@ -210,16 +210,16 @@ func burn{
 end
 
 @storage_var
-func txTrade_address() -> (address: felt):
+func txAsset_address() -> (address: felt):
 end
 
 @external
-func setTradeAddress{
+func setAssetAddress{
         syscall_ptr: felt*,
         pedersen_ptr: HashBuiltin*,
         range_check_ptr
-    }(tradeAddress: felt):
+    }(address: felt):
     Ownable.assert_only_owner()
-    txTrade_address.write(tradeAddress)
+    txAsset_address.write(address)
     return ()
 end
