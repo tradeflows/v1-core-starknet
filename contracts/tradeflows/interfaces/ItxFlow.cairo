@@ -28,5 +28,8 @@ namespace ItxFlow:
 
     func pauseTokenId(address: felt, tokenId: Uint256, paused: felt) -> ():
     end
+
+    func transferTokenId(address: felt, tokenId: Uint256, addressTo: felt) -> ():
+    end
 end
 

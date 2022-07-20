@@ -231,3 +231,22 @@ func pause{
     
     return ()
 end
+
+# Transfer a flow
+@external
+func transfer{
+        syscall_ptr : felt*, 
+        pedersen_ptr : HashBuiltin*, 
+        range_check_ptr
+    }(
+        tokenId: Uint256,
+        address: felt
+    ):
+
+    let (account)      = get_caller_address()
+    let (base_address) = OUTFLOW_baseFlow.read()
+    
+    ItxFlow.transferTokenId(contract_address=base_address, address=account, tokenId=tokenId, addressTo=address)
+    
+    return ()
+end

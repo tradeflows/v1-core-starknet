@@ -810,6 +810,7 @@ func decreaseTokenId{
     return ()
 end
 
+# Pause streaming an existing stream by tokenId
 @external
 func pauseTokenId{
         syscall_ptr: felt*, 
@@ -843,6 +844,46 @@ func pauseTokenId{
 
     let (stream)      = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
     let edited_stream = MaturityStreamStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=paused)
+    FLOW_in.write(idStruct.beneficiary, idStruct.tokenId, idStruct.idx, edited_stream)
+    
+    ReentrancyGuard._end()
+    return ()
+end
+
+# Transfer an existing stream by tokenId
+@external
+func transferTokenId{
+        syscall_ptr: felt*, 
+        pedersen_ptr: HashBuiltin*, 
+        range_check_ptr
+    }(
+        address: felt,
+        tokenId: Uint256,
+        addressTo: felt
+    ) -> ():
+    ReentrancyGuard._start()
+
+    let (outFlow)     = FLOW_OutFlow_address.read()
+    let (caller)      = get_caller_address()
+
+    with_attr error_message("tokenId not found"):
+        assert outFlow = caller
+    end
+    
+    let (idStruct)    = FLOW_id_streams.read(tokenId)
+
+    with_attr error_message("tokenId not found"):
+        assert_not_zero(idStruct.beneficiary)
+    end
+
+    let (stream)      = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
+
+    with_attr error_message("only owner can call this function"):
+        assert stream.payer = address
+    end
+
+    let (stream)      = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
+    let edited_stream = MaturityStreamStructure(payer=addressTo, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused)
     FLOW_in.write(idStruct.beneficiary, idStruct.tokenId, idStruct.idx, edited_stream)
     
     ReentrancyGuard._end()
