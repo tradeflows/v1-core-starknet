@@ -744,6 +744,16 @@ describe("Start Workflow", function () {
     console.log('total', (BigInt(b0) + BigInt(b1) + BigInt(b2) + BigInt(bn) + BigInt(bc) + BigInt(bd)).toString())
   })
 
+  it("pause on", async function() {   
+    let tokenId = toUint256WithFelts("0")
+    
+    await account0.invoke(
+        txEscrowContract, 
+        'pause', 
+        { tokenId: tokenId, paused: 1 }, 
+        { maxFee: FEE}
+      )
+  })
 
   it("withdraw", async function() {
     let tokenId = toUint256WithFelts("0")
@@ -842,24 +852,13 @@ describe("Start Workflow", function () {
     console.log('total', (BigInt(b0) + BigInt(b1) + BigInt(b2) + BigInt(bn) + BigInt(bc) + BigInt(bd)).toString())
   })
 
-  it("pause on", async function() {   
-    let tokenId = toUint256WithFelts("0")
-    
-    await account0.invoke(
-        txEscrowContract, 
-        'pause', 
-        { tokenId: tokenId, pause: 1 }, 
-        { maxFee: FEE}
-      )
-  })
-
   it("pause off", async function() {   
     let tokenId = toUint256WithFelts("0")
     
     await account0.invoke(
         txEscrowContract, 
         'pause', 
-        { tokenId: tokenId, pause: 0 }, 
+        { tokenId: tokenId, paused: 0 }, 
         { maxFee: FEE}
       )
   })
