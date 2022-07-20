@@ -91,6 +91,9 @@ end
 func balanceOfBatch{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         accounts_len : felt, accounts : felt*, ids_len : felt, ids : Uint256*)
         -> (balances_len : felt, balances : Uint256*):
+    with_attr error_message("txOutFlow: not implemented"):
+        assert_not_zero(0)
+    end
     let (balances_len,balances) =  ERC1155.balance_of_batch(accounts_len, accounts, ids_len, ids)
     return (balances_len,balances)
 end
@@ -98,6 +101,9 @@ end
 @view
 func isApprovedForAll{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         account : felt, operator : felt) -> (is_approved : felt):
+    with_attr error_message("txOutFlow: not implemented"):
+        assert_not_zero(0)
+    end
     let (is_approved) = ERC1155.is_approved_for_all(account, operator)
     return (is_approved)
 end
@@ -110,6 +116,9 @@ end
 func setApprovalForAll{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         operator : felt, approved : felt):
     ERC1155.set_approval_for_all(operator, approved)
+    with_attr error_message("txOutFlow: not implemented"):
+        assert_not_zero(0)
+    end
     return ()
 end
 
@@ -117,6 +126,9 @@ end
 func safeTransferFrom{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
         from_ : felt, to : felt, id : Uint256, amount : Uint256, data_len : felt, data : felt*):
     ERC1155.safe_transfer_from(from_, to, id, amount, data_len, data)
+    with_attr error_message("txOutFlow: not implemented"):
+        assert_not_zero(0)
+    end
     return ()
 end
 
@@ -127,6 +139,9 @@ func safeBatchTransferFrom{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ran
         data_len : felt, data : felt*):
     ERC1155.safe_batch_transfer_from(
         from_, to, ids_len, ids, amounts_len, amounts, data_len, data)
+    with_attr error_message("txOutFlow: not implemented"):
+        assert_not_zero(0)
+    end
     return ()
 end
 
