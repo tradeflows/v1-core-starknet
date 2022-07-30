@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows ERC20 Dharma / Rating Contracts for Cairo v0.2.0 (traflows/txDharma.cairo)
+# TradeFlows ERC20 Dharma / Rating Contracts for Cairo v0.3.0 (tradeflows/txDharma.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  
@@ -23,7 +23,7 @@ from openzeppelin.token.erc20.library import (
     ERC20
 )
 
-from openzeppelin.access.ownable import Ownable
+from openzeppelin.access.ownable.library import Ownable
 
 from starkware.starknet.common.syscalls import (
     get_contract_address,

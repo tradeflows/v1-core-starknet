@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows ERC20 Wrapper Contracts for Cairo v0.2.0 (traflows/txFlow.cairo)
+# TradeFlows ERC20 Wrapper Contracts for Cairo v0.3.0 (tradeflows/txFlow.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  
@@ -19,10 +19,10 @@ from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.cairo.common.uint256 import Uint256
 
 from openzeppelin.token.erc20.library import ERC20_allowances, ERC20_balances, ERC20
-from openzeppelin.security.reentrancyguard import ReentrancyGuard
+from openzeppelin.security.reentrancyguard.library import ReentrancyGuard
 from openzeppelin.token.erc20.interfaces.IERC20 import IERC20
-from openzeppelin.security.safemath import SafeUint256
-from openzeppelin.access.ownable import Ownable
+from openzeppelin.security.safemath.library import SafeUint256
+from openzeppelin.access.ownable.library import Ownable
 
 from tradeflows.library.flow import FLOW_in, FLOW_in_count, FLOW_base_token, FLOW_id_streams, FLOW_OutFlow_address, MaturityStreamStructure, Flow
 from tradeflows.library.asset import Asset

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows Trade library for Cairo v0.2.0 (traflows/library/asset.cairo)
+# TradeFlows Trade library for Cairo v0.3.0 (tradeflows/library/asset.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  
@@ -29,12 +29,13 @@ from openzeppelin.token.erc20.library import (
     ERC20
 )
 
+from openzeppelin.token.erc721.enumerable.library import ERC721Enumerable
 from openzeppelin.token.erc721.interfaces.IERC721 import IERC721
 from openzeppelin.token.erc20.interfaces.IERC20 import IERC20
 
 from openzeppelin.token.erc721.library import ERC721
 
-from openzeppelin.access.ownable import Ownable
+from openzeppelin.access.ownable.library import Ownable
 
 from starkware.starknet.common.syscalls import (
     get_caller_address,
@@ -49,7 +50,7 @@ from starkware.cairo.common.math import (
     assert_nn
 )
 from starkware.cairo.common.alloc import alloc
-from openzeppelin.security.safemath import SafeUint256
+from openzeppelin.security.safemath.library import SafeUint256
 
 from tradeflows.interfaces.ItxDharma import ItxDharma
 
@@ -927,8 +928,34 @@ namespace Asset:
         return (sub_tokens_len, sub_types_value)
     end
 
+    # reset weights
+    func deComposeSubTokens{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256
+        ):
+
+        alloc_locals
+
+        with_attr error_message("tokenId is not a valid Uint256"):
+            uint256_check(tokenId)
+        end
+
+        let (_sub_tokens_len, _sub_tokens) = subTokens(tokenId)
+
+        let (local sub_tokens_value : Uint256*) = alloc()
+
+        _reset_sub_tokens(tokenId, _sub_tokens_len, _sub_tokens)
+        _set_sub_tokens(tokenId, 0, sub_tokens_value)
+        _set_sub_types(tokenId, 0, &[0])
+        ASSET_sub_tokens_len.write(tokenId, 0)
+        return ()
+    end
+
     # set sub tokens
-    func setSubTokens{
+    func composeSubTokens{
             syscall_ptr : felt*, 
             pedersen_ptr : HashBuiltin*, 
             range_check_ptr
@@ -946,26 +973,11 @@ namespace Asset:
             assert subTypes_len = subTokenIds_len
         end
 
+        deComposeSubTokens(tokenId)
+
         _set_sub_types(tokenId, subTypes_len, subTypes)
         _set_sub_tokens(tokenId, subTokenIds_len, subTokenIds)
         ASSET_sub_tokens_len.write(tokenId, subTokenIds_len)
-        return ()
-    end
-
-    # reset weights
-    func resetSubTokens{
-            syscall_ptr : felt*, 
-            pedersen_ptr : HashBuiltin*, 
-            range_check_ptr
-        }(
-            tokenId : Uint256
-        ):
-
-        with_attr error_message("tokenId is not a valid Uint256"):
-            uint256_check(tokenId)
-        end
-
-        setSubTokens(tokenId, 0, &[0], 0, &[Uint256(0,0)])
         return ()
     end
 
@@ -984,8 +996,40 @@ namespace Asset:
             return ()
         end
 
+        let (caller_address)   = get_caller_address()
+        let (contract_address) = get_contract_address()
+
+        ERC721Enumerable.transfer_from(caller_address, contract_address, [sub_tokens])
+
         ASSET_sub_tokens.write(tokenId, sub_tokens_len, [sub_tokens])
         _set_sub_tokens(tokenId, sub_tokens_len - 1, sub_tokens + 1)
+        return ()
+    end
+
+    # helper: set sub tokens
+    func _reset_sub_tokens{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256, 
+            sub_tokens_len : felt, 
+            sub_tokens : Uint256*
+        ):
+
+        alloc_locals
+
+        if sub_tokens_len == 0:
+            return ()
+        end
+
+        let (caller_address)   = get_caller_address()
+        let (contract_address) = get_contract_address()
+
+        ERC721._approve(caller_address, [sub_tokens])
+        ERC721Enumerable.transfer_from(contract_address, caller_address, [sub_tokens])
+
+        _reset_sub_tokens(tokenId, sub_tokens_len - 1, sub_tokens + 1)
         return ()
     end
 

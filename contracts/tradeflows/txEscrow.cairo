@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows OutFlows ERC1155 Contracts for Cairo v0.2.0 (traflows/txOutFlow.cairo)
+# TradeFlows OutFlows ERC1155 Contracts for Cairo v0.3.0 (tradeflows/txOutFlow.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  
@@ -21,9 +21,9 @@ from starkware.cairo.common.bool import TRUE, FALSE
 
 from openzeppelin.token.erc20.interfaces.IERC20 import IERC20
 
-from openzeppelin.access.ownable import Ownable
+from openzeppelin.access.ownable.library import Ownable
 from openzeppelin.token.erc1155.library import ERC1155
-from openzeppelin.introspection.ERC165 import ERC165
+from openzeppelin.introspection.ERC165.library import ERC165
 
 from tradeflows.interfaces.ItxFlow import ItxFlow
 
