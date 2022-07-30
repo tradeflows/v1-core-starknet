@@ -372,6 +372,7 @@ func memberWeight{
     return (weight=weight, weight_base=weight_base)
 end
 
+# get base weight
 @view
 func baseWeight{
         syscall_ptr: felt*, 
@@ -387,6 +388,7 @@ func baseWeight{
     return (weight=weight)
 end
 
+# get weights
 @view
 func getWeights{
         syscall_ptr: felt*, 
@@ -403,6 +405,7 @@ func getWeights{
     return (wgts_len, wgts)
 end
 
+# get addresses
 @view
 func getAddresses{
         syscall_ptr: felt*, 
@@ -417,6 +420,40 @@ func getAddresses{
     let (addrs_len : felt, addrs : felt*) = Asset.getAddresses(tokenId)
 
     return (addrs_len, addrs)
+end
+
+# get sub tokens
+@view
+func getSubTokens{
+        syscall_ptr: felt*, 
+        pedersen_ptr: HashBuiltin*, 
+        range_check_ptr
+    }(
+        tokenId: Uint256
+    ) -> (
+        sub_tokens_len : felt, 
+        sub_tokens : Uint256*
+    ):
+    let (sub_tokens_len : felt, sub_tokens : Uint256*) = Asset.subTokens(tokenId)
+
+    return (sub_tokens_len, sub_tokens)
+end
+
+# get sub types
+@view
+func getSubTypes{
+        syscall_ptr: felt*, 
+        pedersen_ptr: HashBuiltin*, 
+        range_check_ptr
+    }(
+        tokenId: Uint256
+    ) -> (
+        sub_types_len : felt, 
+        sub_types : felt*
+    ):
+    let (sub_types_len : felt, sub_types : felt*) = Asset.subTypes(tokenId)
+
+    return (sub_types_len, sub_types)
 end
 
 # get the agreement terms
@@ -513,6 +550,25 @@ func setFee{
     ) -> ():
     ReentrancyGuard._start()
     ASSET_fees.write(tokenAddress, amount)
+    ReentrancyGuard._end()
+    return ()
+end
+
+# set sub tokens for an asset
+@external
+func setSubTokens{
+        pedersen_ptr: HashBuiltin*, 
+        syscall_ptr: felt*, 
+        range_check_ptr
+    }(
+        tokenId : Uint256, 
+        subTypes_len : felt, 
+        subTypes : felt*,
+        subTokenIds_len : felt, 
+        subTokenIds : Uint256*
+    ) -> ():
+    ReentrancyGuard._start()
+    Asset.setSubTokens(tokenId, subTypes_len, subTypes, subTokenIds_len, subTokenIds)
     ReentrancyGuard._end()
     return ()
 end
