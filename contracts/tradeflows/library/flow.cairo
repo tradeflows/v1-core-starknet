@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows Flow library for Cairo v0.2.0 (traflows/library/flow.cairo)
+# TradeFlows Flow library for Cairo v0.3.0 (tradeflows/library/flow.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  
@@ -40,8 +40,8 @@ from starkware.cairo.common.alloc import alloc
 from openzeppelin.token.erc20.library import ERC20_allowances, ERC20_balances,ERC20
 from openzeppelin.token.erc721.interfaces.IERC721 import IERC721
 from openzeppelin.token.erc20.interfaces.IERC20 import IERC20
-from openzeppelin.security.safemath import SafeUint256
-from openzeppelin.access.ownable import Ownable
+from openzeppelin.security.safemath.library import SafeUint256
+from openzeppelin.access.ownable.library import Ownable
 
 from tradeflows.interfaces.ItxAsset import ItxAsset
 

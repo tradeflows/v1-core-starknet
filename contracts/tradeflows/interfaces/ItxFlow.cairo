@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows Flow Interface for Cairo v0.2.0 (traflows/interfaces/ItxFlow.cairo)
+# TradeFlows Flow Interface for Cairo v0.3.0 (tradeflows/interfaces/ItxFlow.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  

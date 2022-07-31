@@ -1,21 +1,13 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows DAO ERC20 Contracts for Cairo v0.3.0 (tradeflows/DAO.cairo)
-#
-#  _____             _     ______ _                   
-# |_   _|           | |    |  ___| |                  
-#   | |_ __ __ _  __| | ___| |_  | | _____      _____ 
-#   | | '__/ _` |/ _` |/ _ \  _| | |/ _ \ \ /\ / / __|
-#   | | | | (_| | (_| |  __/ |   | | (_) \ V  V /\__ \
-#   \_/_|  \__,_|\__,_|\___\_|   |_|\___/ \_/\_/ |___/
-#
-# Author: @NumbersDeFi
+# OpenZeppelin Contracts for Cairo v0.2.1 (token/erc20/presets/ERC20Mintable.cairo)
 
 %lang starknet
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
-from starkware.cairo.common.bool import TRUE
 from starkware.cairo.common.uint256 import Uint256
+from starkware.cairo.common.bool import TRUE
 
+from openzeppelin.access.ownable.library import Ownable
 from openzeppelin.token.erc20.library import ERC20
 
 @constructor
@@ -28,10 +20,12 @@ func constructor{
         symbol: felt,
         decimals: felt,
         initial_supply: Uint256,
-        recipient: felt
+        recipient: felt,
+        owner: felt
     ):
     ERC20.initializer(name, symbol, decimals)
     ERC20._mint(recipient, initial_supply)
+    Ownable.initializer(owner)
     return ()
 end
 
@@ -99,6 +93,16 @@ func allowance{
     return (remaining)
 end
 
+@view
+func owner{
+        syscall_ptr : felt*,
+        pedersen_ptr : HashBuiltin*,
+        range_check_ptr
+    }() -> (owner: felt):
+    let (owner: felt) = Ownable.owner()
+    return (owner)
+end
+
 #
 # Externals
 #
@@ -155,4 +159,35 @@ func decreaseAllowance{
     }(spender: felt, subtracted_value: Uint256) -> (success: felt):
     ERC20.decrease_allowance(spender, subtracted_value)
     return (TRUE)
+end
+
+@external
+func mint{
+        syscall_ptr: felt*,
+        pedersen_ptr: HashBuiltin*,
+        range_check_ptr
+    }(to: felt, amount: Uint256):
+    Ownable.assert_only_owner()
+    ERC20._mint(to, amount)
+    return ()
+end
+
+@external
+func transferOwnership{
+        syscall_ptr: felt*,
+        pedersen_ptr: HashBuiltin*,
+        range_check_ptr
+    }(newOwner: felt):
+    Ownable.transfer_ownership(newOwner)
+    return ()
+end
+
+@external
+func renounceOwnership{
+        syscall_ptr: felt*,
+        pedersen_ptr: HashBuiltin*,
+        range_check_ptr
+    }():
+    Ownable.renounce_ownership()
+    return ()
 end
