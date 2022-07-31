@@ -37,6 +37,10 @@ export const walletPrivate0             = '.. GET YOUR OWN ..'
 export const walletAddress1             = '.. GET YOUR OWN ..'
 export const walletPrivate1             = '.. GET YOUR OWN ..'
 
+export const walletAddress2             = '.. GET YOUR OWN ..'
+export const walletPrivate2             = '.. GET YOUR OWN ..'
+
+
 // Infrastructure
 export const daoContractAddress         = '0x0351172e2bb614d3354c8c5aba22d777f6faeba2b66744f7116e96b79358dac0'
 export const txDharmaContractAddress    = '0x07d00d72858504a84a1a09a06e60800811c2b8d720474ca420f2fa7bc1b1104a'
