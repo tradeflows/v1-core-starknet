@@ -267,7 +267,7 @@ func setTokenURI{
 end
 
 #
-# txTrade Custom functionality
+# txAsset Custom functionality
 #
 
 #
