@@ -1,14 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows DAO ERC20 Contracts for Cairo v0.3.0 (tradeflows/DAO.cairo)
-#
-#  _____             _     ______ _                   
-# |_   _|           | |    |  ___| |                  
-#   | |_ __ __ _  __| | ___| |_  | | _____      _____ 
-#   | | '__/ _` |/ _` |/ _ \  _| | |/ _ \ \ /\ / / __|
-#   | | | | (_| | (_| |  __/ |   | | (_) \ V  V /\__ \
-#   \_/_|  \__,_|\__,_|\___\_|   |_|\___/ \_/\_/ |___/
-#
-# Author: @NumbersDeFi
+# OpenZeppelin Contracts for Cairo v0.2.1 (token/erc20/presets/ERC20.cairo)
 
 %lang starknet
 

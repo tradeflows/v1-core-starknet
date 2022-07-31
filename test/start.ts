@@ -3,6 +3,8 @@ import { StarknetContract, StarknetContractFactory, Account } from "hardhat/type
 import { TIMEOUT, FEE, WEIGHT_BASE, ETH_WEI, walletAddressOwner, walletPrivateOwner, walletAddress0, walletPrivate0, walletAddress1, walletPrivate1, walletAddress2, walletPrivate2 } from "../scripts/constants";
 import { strToFeltArr, toUint256WithFelts, fromUint256WithFelts } from "../scripts/starknetUtils"
 
+import { toBN } from 'starknet/dist/utils/number'
+
 describe("Start Workflow", function () {
   this.timeout(TIMEOUT);
 
@@ -304,8 +306,6 @@ describe("Start Workflow", function () {
           counterpart: account0.starknetContract.address, 
           meta: strToFeltArr(JSON.stringify(tradeInfo)),
           tokens: [txFlowContract.address],
-          // members: [account1.starknetContract.address, account2.starknetContract.address],
-          // weights: [parseInt((WEIGHT_BASE * wgt).toString()), parseInt((WEIGHT_BASE * (1.0 - wgt)).toString())],
           members: [account1.starknetContract.address, account2.starknetContract.address],
           weights: [2, 1],
           // members: [],
@@ -316,8 +316,142 @@ describe("Start Workflow", function () {
     
     let txReceipt = await starknet.getTransactionReceipt(txHash)
     let tokenId = fromUint256WithFelts({ low: BigInt(txReceipt['events'][0]['data'][0]), high: BigInt(txReceipt['events'][0]['data'][1]) })
-    console.log('tokenId', tokenId.toString())
+    console.log('tokenId 1', tokenId.toString())
   })
+
+  it("init txAsset 2", async function() {   
+    let tradeInfo = {
+      counterPart: 'John Doe',
+      description: 'I hope that a study of very long sentences will arm you with strategies that are almost as diverse as the sentences themselves, such as: starting each clause with the same word, tilting with dependent clauses toward a revelation at the end, padding with parentheticals, showing great latitude toward standard punctuation, rabbit-trailing away from the initial subject, encapsulating an entire life, and lastly, as this sentence is, celebrating the list.',
+      payments: [
+        {
+          amount: 100,
+          collateral: 10,
+          type: 'stream',
+          startDate: '2022-12-12',
+          endDate: '2023-12-12'
+        },
+        {
+          amount: 100,
+          collateral: 10,
+          type: 'stream',
+          startDate: '2023-12-12',
+          endDate: '2024-12-12'
+        },
+        {
+          amount: 100,
+          collateral: 10,
+          type: 'bullet',
+          date: '2024-12-12'
+        }
+        
+      ]
+    }
+
+    await account1.invoke(
+      txFlowContract, 
+      'approve', 
+      { spender: txAssetContract.address, amount: toUint256WithFelts("5") }, 
+      { maxFee: FEE}
+    )
+
+    const txHash = await account1.invoke(
+        txAssetContract, 
+        "init", 
+        { 
+          counterpart: account0.starknetContract.address, 
+          meta: strToFeltArr(JSON.stringify(tradeInfo)),
+          tokens: [txFlowContract.address],
+          members: [],
+          weights: []
+        },
+        { maxFee: FEE}
+      )
+    
+    let txReceipt = await starknet.getTransactionReceipt(txHash)
+    let tokenId = fromUint256WithFelts({ low: BigInt(txReceipt['events'][0]['data'][0]), high: BigInt(txReceipt['events'][0]['data'][1]) })
+    console.log('tokenId 2', tokenId.toString())
+  })
+
+  it("owner", async function() {   
+    let tokenId = toUint256WithFelts("1")
+
+    const { owner: owner } = await account0.call(txAssetContract, "ownerOf", { tokenId: tokenId })
+    
+    console.log('owner', '0x0' + toBN(owner).toString(16))
+  })
+
+  it("compose", async function() {   
+
+    const tokenId = toUint256WithFelts("1")
+    
+    await account1.invoke(
+      txAssetContract, 
+      'approve', 
+      { to: txAssetContract.address, tokenId: tokenId }, 
+      { maxFee: FEE}
+    )
+    const txHash1 = await account1.invoke(
+      txAssetContract, 
+      "composeSubTokens", 
+      { 
+        tokenId: toUint256WithFelts("0"),
+        subTypes: [starknet.shortStringToBigInt('type 1')],
+        subTokenIds: [ tokenId ]
+      },
+      { maxFee: FEE}
+    )
+    
+  })
+
+  it("owner", async function() {   
+    let tokenId = toUint256WithFelts("1")
+
+    const { owner: owner } = await account0.call(txAssetContract, "ownerOf", { tokenId: tokenId })
+    
+    console.log('owner', '0x0' + toBN(owner).toString(16))
+  })
+
+  it("get sub tokens", async function() {   
+    let tokenId = toUint256WithFelts("0")
+
+    const tokens = await account0.call(txAssetContract, "getSubTokens", { tokenId: tokenId })
+    const types = await account0.call(txAssetContract, "getSubTypes", { tokenId: tokenId })
+    
+    console.log('tokens',tokens)
+    console.log('types',types)
+  })
+
+  it("decompose", async function() {   
+
+    const txHash1 = await account1.invoke(
+      txAssetContract, 
+      "deComposeSubTokens", 
+      { 
+        tokenId: toUint256WithFelts("0"),
+      },
+      { maxFee: FEE}
+    )
+  })
+
+  it("get sub tokens", async function() {   
+    let tokenId = toUint256WithFelts("0")
+
+    const tokens = await account0.call(txAssetContract, "getSubTokens", { tokenId: tokenId })
+    const types = await account0.call(txAssetContract, "getSubTypes", { tokenId: tokenId })
+    
+    console.log('tokens',tokens)
+    console.log('types',types)
+  })
+    
+  it("owner", async function() {   
+    let tokenId = toUint256WithFelts("1")
+
+    const { owner: owner } = await account0.call(txAssetContract, "ownerOf", { tokenId: tokenId })
+    
+    console.log('owner', '0x0' + toBN(owner).toString(16))
+  })
+  
 
   it("member weight", async function() {   
     let tokenId = toUint256WithFelts("0")
@@ -893,7 +1027,7 @@ describe("Start Workflow", function () {
 
   it("decrease amount", async function() {   
     let tokenId = toUint256WithFelts("0")
-    const initial_amount = toUint256WithFelts((BigInt('7,000,000,000'.replace(/,/g, ''))).toString())
+    const initial_amount = toUint256WithFelts((BigInt('3,000,000,000'.replace(/,/g, ''))).toString())
 
 
     await account0.invoke(

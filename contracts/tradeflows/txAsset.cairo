@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows Asset ERC721 Contracts for Cairo v0.2.0 (traflows/txAsset.cairo)
+# TradeFlows Asset ERC721 Contracts for Cairo v0.3.0 (tradeflows/txAsset.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  
@@ -17,12 +17,12 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.bool import TRUE
 
-from openzeppelin.token.erc721_enumerable.library import ERC721_Enumerable
-from openzeppelin.security.reentrancyguard import ReentrancyGuard
-from openzeppelin.security.safemath import SafeUint256
+from openzeppelin.token.erc721.enumerable.library import ERC721Enumerable
+from openzeppelin.security.reentrancyguard.library import ReentrancyGuard
+from openzeppelin.security.safemath.library import SafeUint256
 from openzeppelin.token.erc721.library import ERC721
-from openzeppelin.introspection.ERC165 import ERC165
-from openzeppelin.access.ownable import Ownable
+from openzeppelin.introspection.ERC165.library import ERC165
+from openzeppelin.access.ownable.library import Ownable
 
 from tradeflows.library.asset import Asset, ASSET_asset_count, ASSET_asset_idx, ASSET_fees, ASSET_paid_fees
 
@@ -43,7 +43,7 @@ func constructor{
         dao_address: felt
     ):
     ERC721.initializer(name, symbol)
-    ERC721_Enumerable.initializer()
+    ERC721Enumerable.initializer()
     Ownable.initializer(owner)
 
     Asset.setTxDharma(txDharma_address)
@@ -61,7 +61,7 @@ func totalSupply{
         syscall_ptr: felt*, 
         range_check_ptr
     }() -> (totalSupply: Uint256):
-    let (totalSupply: Uint256) = ERC721_Enumerable.total_supply()
+    let (totalSupply: Uint256) = ERC721Enumerable.total_supply()
     return (totalSupply)
 end
 
@@ -71,7 +71,7 @@ func tokenByIndex{
         syscall_ptr: felt*, 
         range_check_ptr
     }(index: Uint256) -> (tokenId: Uint256):
-    let (tokenId: Uint256) = ERC721_Enumerable.token_by_index(index)
+    let (tokenId: Uint256) = ERC721Enumerable.token_by_index(index)
     return (tokenId)
 end
 
@@ -81,7 +81,7 @@ func tokenOfOwnerByIndex{
         syscall_ptr: felt*, 
         range_check_ptr
     }(owner: felt, index: Uint256) -> (tokenId: Uint256):
-    let (tokenId: Uint256) = ERC721_Enumerable.token_of_owner_by_index(owner, index)
+    let (tokenId: Uint256) = ERC721Enumerable.token_of_owner_by_index(owner, index)
     return (tokenId)
 end
 
@@ -204,7 +204,7 @@ func transferFrom{
         tokenId: Uint256
     ):
     ReentrancyGuard._start()
-    ERC721_Enumerable.transfer_from(from_, to, tokenId)
+    ERC721Enumerable.transfer_from(from_, to, tokenId)
     ReentrancyGuard._end()
     return ()
 end
@@ -222,7 +222,7 @@ func safeTransferFrom{
         data: felt*
     ):
     ReentrancyGuard._start()
-    ERC721_Enumerable.safe_transfer_from(from_, to, tokenId, data_len, data)
+    ERC721Enumerable.safe_transfer_from(from_, to, tokenId, data_len, data)
     ReentrancyGuard._end()
     return ()
 end
@@ -235,7 +235,7 @@ func mint{
     }(to: felt, tokenId: Uint256):
     ReentrancyGuard._start()
     Ownable.assert_only_owner()
-    ERC721_Enumerable._mint(to, tokenId)
+    ERC721Enumerable._mint(to, tokenId)
     ReentrancyGuard._end()
     return ()
 end
@@ -248,7 +248,7 @@ func burn{
     }(tokenId: Uint256):
     ReentrancyGuard._start()
     ERC721.assert_only_token_owner(tokenId)
-    ERC721_Enumerable._burn(tokenId)
+    ERC721Enumerable._burn(tokenId)
     ReentrancyGuard._end()
     return ()
 end
@@ -372,6 +372,7 @@ func memberWeight{
     return (weight=weight, weight_base=weight_base)
 end
 
+# get base weight
 @view
 func baseWeight{
         syscall_ptr: felt*, 
@@ -387,6 +388,7 @@ func baseWeight{
     return (weight=weight)
 end
 
+# get weights
 @view
 func getWeights{
         syscall_ptr: felt*, 
@@ -403,6 +405,7 @@ func getWeights{
     return (wgts_len, wgts)
 end
 
+# get addresses
 @view
 func getAddresses{
         syscall_ptr: felt*, 
@@ -417,6 +420,40 @@ func getAddresses{
     let (addrs_len : felt, addrs : felt*) = Asset.getAddresses(tokenId)
 
     return (addrs_len, addrs)
+end
+
+# get sub tokens
+@view
+func getSubTokens{
+        syscall_ptr: felt*, 
+        pedersen_ptr: HashBuiltin*, 
+        range_check_ptr
+    }(
+        tokenId: Uint256
+    ) -> (
+        sub_tokens_len : felt, 
+        sub_tokens : Uint256*
+    ):
+    let (sub_tokens_len : felt, sub_tokens : Uint256*) = Asset.subTokens(tokenId)
+
+    return (sub_tokens_len, sub_tokens)
+end
+
+# get sub types
+@view
+func getSubTypes{
+        syscall_ptr: felt*, 
+        pedersen_ptr: HashBuiltin*, 
+        range_check_ptr
+    }(
+        tokenId: Uint256
+    ) -> (
+        sub_types_len : felt, 
+        sub_types : felt*
+    ):
+    let (sub_types_len : felt, sub_types : felt*) = Asset.subTypes(tokenId)
+
+    return (sub_types_len, sub_types)
 end
 
 # get the agreement terms
@@ -463,7 +500,7 @@ func init{
     let (caller_address)    = get_caller_address()
     let (tokenId)           = Asset.init(counterpart, members_len, members, weights_len, weights)    
     
-    ERC721_Enumerable._mint(caller_address, tokenId)
+    ERC721Enumerable._mint(caller_address, tokenId)
     Asset.setMeta(tokenId, meta_len, meta)
     Asset.chargeFee(tokenId=tokenId, tokens_len=tokens_len, tokens=tokens)
     ReentrancyGuard._end()
@@ -513,6 +550,40 @@ func setFee{
     ) -> ():
     ReentrancyGuard._start()
     ASSET_fees.write(tokenAddress, amount)
+    ReentrancyGuard._end()
+    return ()
+end
+
+# set sub tokens for an asset
+@external
+func composeSubTokens{
+        pedersen_ptr: HashBuiltin*, 
+        syscall_ptr: felt*, 
+        range_check_ptr
+    }(
+        tokenId : Uint256, 
+        subTypes_len : felt, 
+        subTypes : felt*,
+        subTokenIds_len : felt, 
+        subTokenIds : Uint256*
+    ) -> ():
+    ReentrancyGuard._start()
+    Asset.composeSubTokens(tokenId, subTypes_len, subTypes, subTokenIds_len, subTokenIds)
+    ReentrancyGuard._end()
+    return ()
+end
+
+# set sub tokens for an asset
+@external
+func deComposeSubTokens{
+        pedersen_ptr: HashBuiltin*, 
+        syscall_ptr: felt*, 
+        range_check_ptr
+    }(
+        tokenId : Uint256
+    ) -> ():
+    ReentrancyGuard._start()
+    Asset.deComposeSubTokens(tokenId)
     ReentrancyGuard._end()
     return ()
 end

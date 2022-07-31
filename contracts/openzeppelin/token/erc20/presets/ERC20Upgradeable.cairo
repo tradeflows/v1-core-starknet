@@ -1,25 +1,22 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows DAO ERC20 Contracts for Cairo v0.3.0 (tradeflows/DAO.cairo)
-#
-#  _____             _     ______ _                   
-# |_   _|           | |    |  ___| |                  
-#   | |_ __ __ _  __| | ___| |_  | | _____      _____ 
-#   | | '__/ _` |/ _` |/ _ \  _| | |/ _ \ \ /\ / / __|
-#   | | | | (_| | (_| |  __/ |   | | (_) \ V  V /\__ \
-#   \_/_|  \__,_|\__,_|\___\_|   |_|\___/ \_/\_/ |___/
-#
-# Author: @NumbersDeFi
+# OpenZeppelin Contracts for Cairo v0.2.1 (token/erc20/presets/ERC20Upgradeable.cairo)
 
 %lang starknet
+%builtins pedersen range_check
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.bool import TRUE
 from starkware.cairo.common.uint256 import Uint256
 
 from openzeppelin.token.erc20.library import ERC20
+from openzeppelin.upgrades.library import Proxy
 
-@constructor
-func constructor{
+#
+# Initializer
+#
+
+@external
+func initializer{
         syscall_ptr: felt*,
         pedersen_ptr: HashBuiltin*,
         range_check_ptr
@@ -28,10 +25,23 @@ func constructor{
         symbol: felt,
         decimals: felt,
         initial_supply: Uint256,
-        recipient: felt
+        recipient: felt,
+        proxy_admin: felt
     ):
     ERC20.initializer(name, symbol, decimals)
     ERC20._mint(recipient, initial_supply)
+    Proxy.initializer(proxy_admin)
+    return ()
+end
+
+@external
+func upgrade{
+        syscall_ptr: felt*,
+        pedersen_ptr: HashBuiltin*,
+        range_check_ptr
+    }(new_implementation: felt):
+    Proxy.assert_only_admin()
+    Proxy._set_implementation_hash(new_implementation)
     return ()
 end
 

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows Trade library for Cairo v0.2.0 (traflows/library/asset.cairo)
+# TradeFlows Trade library for Cairo v0.3.0 (tradeflows/library/asset.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  
@@ -29,12 +29,13 @@ from openzeppelin.token.erc20.library import (
     ERC20
 )
 
+from openzeppelin.token.erc721.enumerable.library import ERC721Enumerable
 from openzeppelin.token.erc721.interfaces.IERC721 import IERC721
 from openzeppelin.token.erc20.interfaces.IERC20 import IERC20
 
 from openzeppelin.token.erc721.library import ERC721
 
-from openzeppelin.access.ownable import Ownable
+from openzeppelin.access.ownable.library import Ownable
 
 from starkware.starknet.common.syscalls import (
     get_caller_address,
@@ -49,7 +50,7 @@ from starkware.cairo.common.math import (
     assert_nn
 )
 from starkware.cairo.common.alloc import alloc
-from openzeppelin.security.safemath import SafeUint256
+from openzeppelin.security.safemath.library import SafeUint256
 
 from tradeflows.interfaces.ItxDharma import ItxDharma
 
@@ -145,6 +146,21 @@ end
 # Storage of the base_weight
 @storage_var
 func base_weight(tokenId : Uint256) -> (res : felt):
+end
+
+# Storage of the member weights (array) of an agreement
+@storage_var
+func ASSET_sub_tokens(tokenId : Uint256, index : felt) -> (res : Uint256):
+end
+
+# Storage of the member length of the terms array of an agreement 
+@storage_var
+func ASSET_sub_tokens_len(tokenId : Uint256) -> (res : felt):
+end
+
+# Storage of the member weights (array) of an agreement
+@storage_var
+func ASSET_sub_types(tokenId : Uint256, index : felt) -> (res : felt):
 end
 
 namespace Asset:
@@ -575,6 +591,10 @@ namespace Asset:
         return ()
     end
 
+    #
+    # Member Weights / Payment split
+    #
+
     # set weights
     func setWeights{
             syscall_ptr : felt*, 
@@ -801,6 +821,7 @@ namespace Asset:
         return ()
     end
 
+    # helper: get addresses
     func _addresses{
             syscall_ptr : felt*, 
             pedersen_ptr : HashBuiltin*, 
@@ -818,6 +839,259 @@ namespace Asset:
         let (addrss_value_at_index) = addresses.read(tokenId, addrss_len)
         assert [addrss] = addrss_value_at_index
         _addresses(tokenId, addrss_len - 1, addrss + 1)
+        return ()
+    end
+
+    # reset weights
+    func resetWeights{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256
+        ):
+
+        with_attr error_message("tokenId is not a valid Uint256"):
+            uint256_check(tokenId)
+        end
+
+        setWeights(tokenId, 0, &[0], 0, &[0])
+        return ()
+    end
+
+    #
+    # Composability
+    #
+
+    # get sub tokens
+    func subTokens{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256
+        ) -> (
+            subTokens_len : felt, 
+            subTokens : Uint256*
+        ):
+        alloc_locals
+
+        # ensure valid uint256
+        with_attr error_message("tokenId is not a valid Uint256"):
+            uint256_check(tokenId)
+        end
+
+        # ensure token with token_id exists
+        let (exists) = ERC721._exists(tokenId)
+        with_attr error_message("nonexistent token"):
+            assert exists = TRUE
+        end
+
+        let (local sub_tokens_len) = ASSET_sub_tokens_len.read(tokenId)
+
+        let (local sub_tokens_value : Uint256*) = alloc()
+
+        _sub_tokens(tokenId, sub_tokens_len, sub_tokens_value)
+
+        return (sub_tokens_len, sub_tokens_value)
+    end
+
+    # get sub types
+    func subTypes{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256
+        ) -> (
+            subTypes_len : felt, 
+            subTypes : felt*
+        ):
+        alloc_locals
+
+        # ensure valid uint256
+        with_attr error_message("tokenId is not a valid Uint256"):
+            uint256_check(tokenId)
+        end
+
+        # ensure token with token_id exists
+        let (exists) = ERC721._exists(tokenId)
+        with_attr error_message("nonexistent token"):
+            assert exists = TRUE
+        end
+
+        let (local sub_tokens_len) = ASSET_sub_tokens_len.read(tokenId)
+
+        let (local sub_types_value) = alloc()
+        _sub_types(tokenId, sub_tokens_len, sub_types_value)
+
+        return (sub_tokens_len, sub_types_value)
+    end
+
+    # reset weights
+    func deComposeSubTokens{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256
+        ):
+
+        alloc_locals
+
+        with_attr error_message("tokenId is not a valid Uint256"):
+            uint256_check(tokenId)
+        end
+
+        let (_sub_tokens_len, _sub_tokens) = subTokens(tokenId)
+
+        let (local sub_tokens_value : Uint256*) = alloc()
+
+        _reset_sub_tokens(tokenId, _sub_tokens_len, _sub_tokens)
+        _set_sub_tokens(tokenId, 0, sub_tokens_value)
+        _set_sub_types(tokenId, 0, &[0])
+        ASSET_sub_tokens_len.write(tokenId, 0)
+        return ()
+    end
+
+    # set sub tokens
+    func composeSubTokens{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256, 
+            subTypes_len : felt, 
+            subTypes : felt*,
+            subTokenIds_len : felt, 
+            subTokenIds : Uint256*
+        ):
+
+        uint256_check(tokenId)
+        
+        with_attr error_message("address length must equal to weights length"):
+            assert subTypes_len = subTokenIds_len
+        end
+
+        deComposeSubTokens(tokenId)
+
+        _set_sub_types(tokenId, subTypes_len, subTypes)
+        _set_sub_tokens(tokenId, subTokenIds_len, subTokenIds)
+        ASSET_sub_tokens_len.write(tokenId, subTokenIds_len)
+        return ()
+    end
+
+    # helper: set sub tokens
+    func _set_sub_tokens{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256, 
+            sub_tokens_len : felt, 
+            sub_tokens : Uint256*
+        ):
+
+        if sub_tokens_len == 0:
+            return ()
+        end
+
+        let (caller_address)   = get_caller_address()
+        let (contract_address) = get_contract_address()
+
+        ERC721Enumerable.transfer_from(caller_address, contract_address, [sub_tokens])
+
+        ASSET_sub_tokens.write(tokenId, sub_tokens_len, [sub_tokens])
+        _set_sub_tokens(tokenId, sub_tokens_len - 1, sub_tokens + 1)
+        return ()
+    end
+
+    # helper: set sub tokens
+    func _reset_sub_tokens{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256, 
+            sub_tokens_len : felt, 
+            sub_tokens : Uint256*
+        ):
+
+        alloc_locals
+
+        if sub_tokens_len == 0:
+            return ()
+        end
+
+        let (caller_address)   = get_caller_address()
+        let (contract_address) = get_contract_address()
+
+        ERC721._approve(caller_address, [sub_tokens])
+        ERC721Enumerable.transfer_from(contract_address, caller_address, [sub_tokens])
+
+        _reset_sub_tokens(tokenId, sub_tokens_len - 1, sub_tokens + 1)
+        return ()
+    end
+
+    # helper: get sub tokens
+    func _sub_tokens{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256, 
+            sub_tokens_len : felt, 
+            sub_tokens : Uint256*
+        ):
+
+        if sub_tokens_len == 0:
+            return ()
+        end
+
+        let (sub_tokens_value_at_index) = ASSET_sub_tokens.read(tokenId, sub_tokens_len)
+        assert [sub_tokens] = sub_tokens_value_at_index
+        _sub_tokens(tokenId, sub_tokens_len - 1, sub_tokens + 1)
+        return ()
+    end
+
+    # helper: set sub types
+    func _set_sub_types{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256, 
+            sub_types_len : felt, 
+            sub_types : felt*
+        ):
+
+        if sub_types_len == 0:
+            return ()
+        end
+
+        ASSET_sub_types.write(tokenId, sub_types_len, [sub_types])
+        _set_sub_types(tokenId, sub_types_len - 1, sub_types + 1)
+        return ()
+    end
+
+    # helper: get sub types
+    func _sub_types{
+            syscall_ptr : felt*, 
+            pedersen_ptr : HashBuiltin*, 
+            range_check_ptr
+        }(
+            tokenId : Uint256, 
+            sub_types_len : felt, 
+            sub_types : felt*
+        ):
+
+        if sub_types_len == 0:
+            return ()
+        end
+
+        let (sub_types_value_at_index) = ASSET_sub_types.read(tokenId, sub_types_len)
+        assert [sub_types] = sub_types_value_at_index
+        _sub_types(tokenId, sub_types_len - 1, sub_types + 1)
         return ()
     end
 end
