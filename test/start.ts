@@ -1027,7 +1027,7 @@ describe("Start Workflow", function () {
 
   it("decrease amount", async function() {   
     let tokenId = toUint256WithFelts("0")
-    const initial_amount = toUint256WithFelts((BigInt('7,000,000,000'.replace(/,/g, ''))).toString())
+    const initial_amount = toUint256WithFelts((BigInt('3,000,000,000'.replace(/,/g, ''))).toString())
 
 
     await account0.invoke(
