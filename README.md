@@ -30,6 +30,7 @@ These factor have very adverse effects on global supply chains of both goods and
 Blockchain is able to mitigate all four negative effects using Smart Contracts that enable a sellers to:
 - Describe an asset's conditions and payment terms;
 - Mint an NFT that represents the asset;
+- Compose NFTs to represent multi-layer structured asset;
 - Allows the buyer to agree to the asset on-chain through custom NFT functionality;
 - The buyer can then link payment streams to the NFT;
 - Collateralise the payment streams in order to show an availability of funds without losing control over them. The seller knows that as long as the funds are in the self-custody contract, they will only be used to pay the stream;
@@ -43,11 +44,12 @@ This repo contains highly experimental code. Expect rapid iteration. Use at your
 # Architecture
 The protocol is based on three infrastructure Smart Contracts:
 - **DAO**: Custom ERC20 contract that represents the ownership of the DAO. This contract is also the treasury to which all Asset Init / Minting fees go to.
-- **txAsset**: Custom ERC721 contract that stores the terms of an asset as a minted NFT. This contract also contains the functionality that allows the buyer to agree to the asset and the NFT is also the received of the programmed payment stream.
+- **txAsset**: Custom ERC721 contract that stores the terms of an asset as a minted NFT. This contract also contains the functionality that allows the buyer to agree to the asset and the NFT is also the received of the programmed payment stream. Furthermore, the NFT enables composability of sub NFTs.
 - **txDharma**: Custom ERC20 contract that is non-transferable and mintable. Community members that are in an active asset are able to mint these tokens to their counerpart's wallets or burn them when attributing a negative score.
 
 and a set of ERC20 wrapper contracts that enable all custom streaming and escrow functionality:
 - **txFlow**: Custom ERC20 contract that wraps around the target token, eg. USDC, and contains the streaming and self-custody functionality. This contract is also extended to attribute a balance to any ERC721 contract.
+- **txEscrow**: Custom ERC1155 contract that wraps around the locked escrow amount that flows towards the target in the Flow token above.
 
 
 # Commercial Workflow
@@ -85,6 +87,7 @@ Deployment Date: 2022-07-18
 :-------------------------:|:-------------------------: 
 ERC20 Test       | [0x032683e2234543d8edccc633bf7a6a0cf36d7f62858323f76018c90c455ea129](https://goerli.voyager.online/contract/0x032683e2234543d8edccc633bf7a6a0cf36d7f62858323f76018c90c455ea129)
 ERC20 Test xFlow | [0x00f5b784c8dfc813cc881ccbe12ffc96135b423f38725691d5bc72524933bf1b](https://goerli.voyager.online/contract/0x00f5b784c8dfc813cc881ccbe12ffc96135b423f38725691d5bc72524933bf1b)
+ERC1155 xFlow    | [0x032683e2234543d8edccc633bf7a6a0cf36d7f62858323f76018c90c455ea129](https://goerli.voyager.online/contract/0x032683e2234543d8edccc633bf7a6a0cf36d7f62858323f76018c90c455ea129)
 
 
 # Environment
