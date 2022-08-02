@@ -183,7 +183,7 @@ func burnBatch{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 end
 
 #
-# txOutFlow extensions
+# txEscrow extensions
 #
 
 # Increase amount by token id
