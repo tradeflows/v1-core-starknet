@@ -128,6 +128,7 @@ end
 func FLOW_id_streams(tokenId: Uint256) -> (idStructure: MaturityStreamIDStructure):
 end
 
+# Storage of the out flow escrow address
 @storage_var
 func FLOW_OutFlow_address() -> (address: felt):
 end
