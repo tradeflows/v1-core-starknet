@@ -366,8 +366,6 @@ namespace Flow:
 
         let uint256_0 = Uint256(0,0)
 
-        let (block_timestamp)   = get_block_timestamp()
-
         let (contract_address)  = get_contract_address()
         let (payer_address)     = get_caller_address()
 
@@ -375,7 +373,7 @@ namespace Flow:
 
         let (new_amount)        = SafeUint256.add(stream.locked_amount, amount)
 
-        with_attr error_message("amount must be less than target amount"):
+        with_attr error_message("amount must be less or equal to target amount"):
             let (ok) = uint256_le(new_amount, stream.target_amount)
             assert ok = TRUE
         end
@@ -426,7 +424,8 @@ namespace Flow:
         end
 
         let (outflow_address)   = FLOW_OutFlow_address.read()
-        ERC20_allowances.write(contract_address, outflow_address, amount)
+        # ERC20_allowances.write(contract_address, outflow_address, amount)
+        ERC20._approve(contract_address, outflow_address, amount)
         
         ERC20.transfer_from(contract_address, stream.payer, amount)        
 
