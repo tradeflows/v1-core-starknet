@@ -209,7 +209,6 @@ func transfer{
 
     Flow.withdraw(caller_address, tokenId, FALSE, FALSE)
     ERC20.transfer(recipient, amount)
-    let (base_address)= FLOW_base_token.read()
     return (TRUE)
 end
 
@@ -226,7 +225,7 @@ func transferFrom{
         success: felt
     ):
 
-    let (caller_address)    = get_caller_address()
+    let (caller_address)   = get_caller_address()
     let tokenId            = Uint256(0,0)
 
     Flow.withdraw(caller_address, tokenId, FALSE, FALSE)
@@ -366,9 +365,7 @@ func withdrawAmount{
 
     let tokenId  = Uint256(0,0)
 
-    let (caller) = get_caller_address()
-
-    let (available_amount, locked_amount, block_timestamp) = Flow.getWithdrawAmount(beneficiary_address, tokenId, caller)
+    let (available_amount, locked_amount, block_timestamp) = Flow.getWithdrawAmount(beneficiary_address, tokenId)
     return (available_amount=available_amount, locked_amount=locked_amount, block_timestamp=block_timestamp)
 end
 
@@ -387,8 +384,7 @@ func withdrawAmountNFT{
          block_timestamp: felt
     ):
 
-    let (caller) = get_caller_address()
-    let (available_amount, locked_amount, block_timestamp) = Flow.getWithdrawAmount(beneficiary_address, beneficiary_tokenId, caller)
+    let (available_amount, locked_amount, block_timestamp) = Flow.getWithdrawAmount(beneficiary_address, beneficiary_tokenId)
     return (available_amount=available_amount, locked_amount=locked_amount, block_timestamp=block_timestamp)
 end
 
@@ -421,8 +417,6 @@ func countIn{
     ) -> (
         count: felt
     ):
-
-    # let tokenId = Uint256(0,0)
 
     let (count) = Flow.maturityStreamCountIn(beneficiary_address, beneficiary_tokenId)
     return (count=count)
@@ -550,20 +544,20 @@ end
 
 # Pause / Unpause all payments
 @external
-func pause{
+func pausePayments{
         syscall_ptr: felt*, 
         pedersen_ptr: HashBuiltin*, 
         range_check_ptr
     }(
         beneficiary_address: felt,
         beneficiary_tokenId: Uint256,
-        pause: felt
+        paused: felt
     ) -> (
         amount: Uint256, 
         locked_amount: Uint256
     ):
     ReentrancyGuard._start()
-    let (amount, locked_amount) = Flow.withdraw(beneficiary_address, beneficiary_tokenId, TRUE, pause)
+    let (amount, locked_amount) = Flow.withdraw(beneficiary_address, beneficiary_tokenId, TRUE, paused)
     ReentrancyGuard._end()
     return (amount=amount, locked_amount=locked_amount)
 end
@@ -586,8 +580,6 @@ func addMaturityStream{
     ReentrancyGuard._start()
     let (payer_address)     = get_caller_address()
     let (contract_address)  = get_contract_address()
-
-    let (block_timestamp)   = get_block_timestamp()
 
     let beneficiary_tokenId = Uint256(0,0)
 
@@ -619,8 +611,7 @@ func addNFTMaturityStream{
     ReentrancyGuard._start()
     let (payer_address)   = get_caller_address()
     let (contract_address)= get_contract_address()
-    let (block_timestamp) = get_block_timestamp()
-
+    
     with_attr error_message("Cannot add stream to custody contract"):
         assert_not_equal(payer_address, contract_address)
     end 
@@ -842,7 +833,6 @@ func pauseTokenId{
         assert stream.payer = address
     end
 
-    let (stream)      = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
     let edited_stream = MaturityStreamStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=paused)
     FLOW_in.write(idStruct.beneficiary, idStruct.tokenId, idStruct.idx, edited_stream)
     

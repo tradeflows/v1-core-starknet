@@ -37,8 +37,7 @@ from starkware.cairo.common.math import (
 )
 from starkware.cairo.common.alloc import alloc
 
-from openzeppelin.token.erc20.library import ERC20_allowances, ERC20_balances,ERC20
-from openzeppelin.token.erc721.interfaces.IERC721 import IERC721
+from openzeppelin.token.erc20.library import ERC20_balances,ERC20
 from openzeppelin.token.erc20.interfaces.IERC20 import IERC20
 from openzeppelin.security.safemath.library import SafeUint256
 from openzeppelin.access.ownable.library import Ownable
@@ -630,8 +629,7 @@ namespace Flow:
             range_check_ptr
         }(
             beneficiary_address: felt,
-            beneficiary_tokenId: Uint256,
-            member_address: felt
+            beneficiary_tokenId: Uint256
         ) -> (
             available_amount: Uint256, 
             locked_amount: Uint256, 
@@ -693,10 +691,9 @@ namespace Flow:
             return (locked_amount=locked_amount)
         end
         
-        let (payout, locked)            = calc_stream(stream=stream, block_timestamp=block_timestamp)
+        let (_, locked)            = calc_stream(stream=stream, block_timestamp=block_timestamp)
         let (locked_amount)             = SafeUint256.add(locked, inner_locked_amount)
         
-
         return (locked_amount=locked_amount)
     end
 
@@ -749,14 +746,14 @@ namespace Flow:
             return (available_amount=uint256_0, locked_amount=uint256_0)
         end
 
-        let (inner_available_amount, inner_locked_amount)       = _withdraw_aggregated_amount(beneficiary_address=beneficiary_address, beneficiary_tokenId=beneficiary_tokenId, block_timestamp=block_timestamp, idx=idx-1, pause=pause)
-        
         let (stream)                                            = FLOW_in.read(beneficiary=beneficiary_address, tokenId=beneficiary_tokenId, idx=idx)
         
         if stream.is_paused == TRUE:
             return (available_amount=uint256_0, locked_amount=uint256_0)
         end
-        
+
+        let (inner_available_amount, inner_locked_amount)       = _withdraw_aggregated_amount(beneficiary_address=beneficiary_address, beneficiary_tokenId=beneficiary_tokenId, block_timestamp=block_timestamp, idx=idx-1, pause=pause)
+    
         let (is_stream_amount_0)                                = uint256_eq(stream.locked_amount, uint256_0)
         if is_stream_amount_0 == TRUE:
             return (available_amount=uint256_0, locked_amount=uint256_0)
@@ -795,8 +792,6 @@ namespace Flow:
                     return (available_amount=inner_available_amount, locked_amount=inner_locked_amount)
                 else:
                     let (payout, locked)                        = calc_stream(stream=stream, block_timestamp=block_timestamp)
-
-                    # let (payout, locked)   = weightMembership(beneficiary_address, beneficiary_tokenId, payout, locked)
 
                     let (total_withdraw)                        = SafeUint256.add(stream.total_withdraw, payout)
 
@@ -860,7 +855,6 @@ namespace Flow:
 
         if is_zero_amount == FALSE:
             if is_nft == TRUE:
-                let (beneficiary_address_final)      = IERC721.ownerOf(contract_address=beneficiary_address, tokenId=beneficiary_tokenId)
                 let (_available_amount, _)           = _withdraw_aggregated_amount(beneficiary_address, beneficiary_tokenId, block_timestamp, count-1, pause)
                 let (caller) = get_caller_address()
                 withdrawRecursive(beneficiary_address, beneficiary_tokenId, available_amount)
@@ -872,7 +866,7 @@ namespace Flow:
                 
                 let (_available_amount, _)           = _withdraw_aggregated_amount(beneficiary_address, beneficiary_tokenId, block_timestamp, count-1, pause)
                 let (caller) = get_caller_address()
-                ERC20_allowances.write(contract_address, caller, available_amount)
+                ERC20._approve(contract_address, caller, available_amount)
                 ERC20.transfer_from(contract_address, beneficiary_address, available_amount)
 
                 withdraw_total_called.emit(payer=beneficiary_address, amount=available_amount, locked_amount=locked_amount, block_time=block_timestamp)
@@ -933,7 +927,6 @@ namespace Flow:
             available_amount: Uint256
         ) -> ():
 
-        let (caller_address)                         = get_caller_address()
         let (weight_base)                            = ItxAsset.baseWeight(contract_address=beneficiary_address, tokenId=beneficiary_tokenId)
         let (wgt_len, wgts)                          = ItxAsset.getWeights(contract_address=beneficiary_address, tokenId=beneficiary_tokenId)
         let (addrss_len, addrss)                     = ItxAsset.getAddresses(contract_address=beneficiary_address, tokenId=beneficiary_tokenId)
@@ -988,18 +981,20 @@ namespace Flow:
                     let (diff_amount)       = SafeUint256.sub_le(available_amount, aggregated_amount)
                     let (new_amount)        = SafeUint256.add(diff_amount, _available_amount)
 
-                    ERC20_allowances.write(contract_address, caller_address, new_amount)
+                    ERC20._approve(contract_address, caller_address, new_amount)
                     ERC20.transfer_from(contract_address, _addrss, new_amount)
-                    ERC20_allowances.write(contract_address, caller_address, uint256_0)
+                    ERC20._approve(contract_address, caller_address, uint256_0)
+                    
                     return()
                 end
             end
 
             let (ok_below_balance)          = uint256_le(_available_amount, balance)
             
-            ERC20_allowances.write(contract_address, caller_address, _available_amount)
+            ERC20._approve(contract_address, caller_address, _available_amount)
             ERC20.transfer_from(contract_address, _addrss, _available_amount)
-            ERC20_allowances.write(contract_address, caller_address, uint256_0)
+            ERC20._approve(contract_address, caller_address, uint256_0)
+            
 
             _withdrawRecursive(weight_base, wgts_len-1,wgts+1,addrss_len-1,addrss+1, available_amount, aggregated_amount)
                 
