@@ -117,24 +117,24 @@ func balanceOf{
     ):
     alloc_locals
 
-    let (balance: Uint256)                      = ERC20.balance_of(account)
+    let (balance: Uint256)          = ERC20.balance_of(account)
 
     ## Stream Logic Start
-    let (contract_address)                      = get_contract_address()
+    let (contract_address)          = get_contract_address()
 
-    let tokenId                                 = Uint256(0,0)
+    let tokenId                     = Uint256(0,0)
 
     if account == contract_address:
-        let (locked_amount, _)                  = Flow.lockedAmountOut(contract_address)
+        let (locked_amount, _)      = Flow.lockedAmountOut(contract_address)
         return (locked_amount)
     else:
 
-        let (block_timestamp)                   = get_block_timestamp()
-        let (count)                             = FLOW_in_count.read(beneficiary=account, tokenId=tokenId)
+        let (block_timestamp)       = get_block_timestamp()
+        let (count)                 = FLOW_in_count.read(beneficiary=account, tokenId=tokenId)
 
-        let (available_amount, locked_amount)   = Flow.aggregatedAmount(account, tokenId, block_timestamp, count)
+        let (available_amount, _)   = Flow.aggregatedAmount(account, tokenId, block_timestamp, count)
 
-        let (res)                               = SafeUint256.add(available_amount, balance)        
+        let (res)                   = SafeUint256.add(available_amount, balance)        
         return (res)
     end
 end
@@ -152,23 +152,23 @@ func balanceOfNFT{
     ):
     alloc_locals
 
-    let (balance: Uint256) = ERC20.balance_of(account)
+    let (balance: Uint256)          = ERC20.balance_of(account)
 
     ## Stream Logic Start
-    let (contract_address)                      = get_contract_address()
+    let (contract_address)          = get_contract_address()
 
     if account == contract_address:
-        let (locked_amount, _)                  = Flow.lockedAmountOut(contract_address)
+        let (locked_amount, _)      = Flow.lockedAmountOut(contract_address)
 
         return (locked_amount)
     else:
 
-        let (block_timestamp)                   = get_block_timestamp()
-        let (count)                             = FLOW_in_count.read(beneficiary=account, tokenId=tokenId)
+        let (block_timestamp)       = get_block_timestamp()
+        let (count)                 = FLOW_in_count.read(beneficiary=account, tokenId=tokenId)
 
-        let (available_amount, locked_amount)   = Flow.aggregatedAmount(account, tokenId, block_timestamp, count)
+        let (available_amount, _)   = Flow.aggregatedAmount(account, tokenId, block_timestamp, count)
         
-        let (res) = SafeUint256.add(available_amount, balance)        
+        let (res)                   = SafeUint256.add(available_amount, balance)        
         return (res)
     end
 end
