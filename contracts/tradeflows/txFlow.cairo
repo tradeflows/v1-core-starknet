@@ -714,7 +714,6 @@ func lockedTokenId{
 
     let (stream)                            = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
     
-
     if stream.payer == address: 
 
         let (block_timestamp)               = get_block_timestamp()    
@@ -872,7 +871,6 @@ func transferTokenId{
         assert stream.payer = address
     end
 
-    let (stream)      = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
     let edited_stream = MaturityStreamStructure(payer=addressTo, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused)
     FLOW_in.write(idStruct.beneficiary, idStruct.tokenId, idStruct.idx, edited_stream)
     
