@@ -733,7 +733,7 @@ func increaseTokenId{
         pedersen_ptr : HashBuiltin*,
         range_check_ptr
     }(
-        address: felt,
+        addrss: felt,
         tokenId: Uint256,
         amount : Uint256
     ) -> ():
@@ -755,7 +755,7 @@ func increaseTokenId{
     let (stream)   = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
 
     with_attr error_message("only owner can call this function"):
-        assert stream.payer = address
+        assert stream.payer = addrss
     end
 
     Flow.increaseAmount(idStruct.beneficiary, idStruct.tokenId, idStruct.idx, amount)
@@ -770,7 +770,7 @@ func decreaseTokenId{
         pedersen_ptr : HashBuiltin*,
         range_check_ptr
     }(
-        address: felt,
+        addrss: felt,
         tokenId: Uint256,
         amount : Uint256
     ) -> ():
@@ -792,7 +792,7 @@ func decreaseTokenId{
     let (stream)   = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
 
     with_attr error_message("only owner can call this function"):
-        assert stream.payer = address
+        assert stream.payer = addrss
     end
 
     Flow.decreaseAmount(idStruct.beneficiary, idStruct.tokenId, idStruct.idx, amount)
@@ -807,7 +807,7 @@ func pauseTokenId{
         pedersen_ptr: HashBuiltin*, 
         range_check_ptr
     }(
-        address: felt,
+        addrss: felt,
         tokenId: Uint256,
         paused: felt
     ) -> ():
@@ -829,7 +829,7 @@ func pauseTokenId{
     let (stream)      = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
 
     with_attr error_message("only owner can call this function"):
-        assert stream.payer = address
+        assert stream.payer = addrss
     end
 
     let edited_stream = MaturityStreamStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=paused)
@@ -846,7 +846,7 @@ func transferTokenId{
         pedersen_ptr: HashBuiltin*, 
         range_check_ptr
     }(
-        address: felt,
+        addrss: felt,
         tokenId: Uint256,
         addressTo: felt
     ) -> ():
@@ -868,7 +868,7 @@ func transferTokenId{
     let (stream)      = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
 
     with_attr error_message("only owner can call this function"):
-        assert stream.payer = address
+        assert stream.payer = addrss
     end
 
     let edited_stream = MaturityStreamStructure(payer=addressTo, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused)
