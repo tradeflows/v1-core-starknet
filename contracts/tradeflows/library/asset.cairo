@@ -29,7 +29,6 @@ from openzeppelin.token.erc20.library import (
     ERC20
 )
 
-from openzeppelin.token.erc721.enumerable.library import ERC721Enumerable
 from openzeppelin.token.erc721.interfaces.IERC721 import IERC721
 from openzeppelin.token.erc20.interfaces.IERC20 import IERC20
 
@@ -55,10 +54,10 @@ from openzeppelin.security.safemath.library import SafeUint256
 from tradeflows.interfaces.ItxDharma import ItxDharma
 
 #
-# Trade functionality
+# Asset functionality
 #
 
-# Event a asset has been initiated
+# Event an asset has been initiated
 @event
 func init_called(tokenId: Uint256, owner: felt, counterpart: felt):
 end
@@ -90,12 +89,12 @@ end
 
 # Storage of the address of the Dharma contract
 @storage_var
-func txDharma_address() -> (address: felt):
+func ASSET_txDharma_address() -> (address: felt):
 end
 
 # Storage of the address of the DAO contract
 @storage_var
-func dao_address() -> (address: felt):
+func ASSET_dao_address() -> (address: felt):
 end
 
 # Storage of the terms (array) of an agreement
@@ -130,22 +129,22 @@ end
 
 # Storage of the member addresses (array) of an agreement
 @storage_var
-func addresses(tokenId : Uint256, index : felt) -> (res : felt):
+func ASSET_addresses(tokenId : Uint256, index : felt) -> (res : felt):
 end
 
 # Storage of the member weights (array) of an agreement
 @storage_var
-func weights(tokenId : Uint256, index : felt) -> (res : felt):
+func ASSET_weights(tokenId : Uint256, index : felt) -> (res : felt):
 end
 
 # Storage of the member length of the terms array of an agreement 
 @storage_var
-func weights_len(tokenId : Uint256) -> (res : felt):
+func ASSET_weights_len(tokenId : Uint256) -> (res : felt):
 end
 
 # Storage of the base_weight
 @storage_var
-func base_weight(tokenId : Uint256) -> (res : felt):
+func ASSET_base_weight(tokenId : Uint256) -> (res : felt):
 end
 
 # Storage of the member weights (array) of an agreement
@@ -206,12 +205,12 @@ namespace Asset:
             let (local wgts_value)  = alloc()
             assert [wgts_value]     = 1
             setWeights(tokenId, 1, addrs_value, 1, wgts_value)
-            base_weight.write(tokenId, 1)
+            ASSET_base_weight.write(tokenId, 1)
         else:
             let (_wgts)             = sum(weights_len, weights)
 
             setWeights(tokenId, members_len, members, weights_len, weights)
-            base_weight.write(tokenId, _wgts)
+            ASSET_base_weight.write(tokenId, _wgts)
         end
 
         init_called.emit(tokenId, caller_address, counterpart)
@@ -305,10 +304,10 @@ namespace Asset:
             syscall_ptr: felt*, 
             range_check_ptr
         }(
-            address: felt
+            addrss: felt
         ) -> ():
         
-        txDharma_address.write(address)
+        ASSET_txDharma_address.write(addrss)
         return()
     end
 
@@ -322,8 +321,8 @@ namespace Asset:
             address: felt
         ):
         
-        let (address) = txDharma_address.read()
-        return(address=address)
+        let (addrss) = ASSET_txDharma_address.read()
+        return(address=addrss)
     end
 
     # set DAO address
@@ -332,10 +331,10 @@ namespace Asset:
             syscall_ptr: felt*, 
             range_check_ptr
         }(
-            address: felt
+            addrss: felt
         ) -> ():
         
-        dao_address.write(address)
+        ASSET_dao_address.write(addrss)
         return()
     end
 
@@ -349,8 +348,8 @@ namespace Asset:
             address: felt
         ):
         
-        let (address) = dao_address.read()
-        return(address=address)
+        let (addrss) = ASSET_dao_address.read()
+        return(address=addrss)
     end
 
     # get base weight
@@ -365,7 +364,7 @@ namespace Asset:
             weight: felt
         ):
         
-        let (weight) = base_weight.read(tokenId)
+        let (weight) = ASSET_base_weight.read(tokenId)
         return(weight=weight)
     end
 
@@ -400,7 +399,7 @@ namespace Asset:
         let (provider)          = agreements_provider.read(tokenId)
         let (counterpart)       = agreements_counterpart.read(tokenId)
 
-        let (txDharma)          = txDharma_address.read()
+        let (txDharma)          = ASSET_txDharma_address.read()
 
         let (negAmount)         = uint256_le(amount, Uint256(0, 0))
 
@@ -580,7 +579,7 @@ namespace Asset:
             assert ok = TRUE
         end
 
-        let (dao)                   = dao_address.read()
+        let (dao)                   = ASSET_dao_address.read()
         
         IERC20.transferFrom(contract_address=tok, sender=caller_address, recipient=dao, amount=amount)
 
@@ -616,7 +615,7 @@ namespace Asset:
 
         _set_weights(tokenId, wgts_len, wgts)
         _set_addresses(tokenId, wgts_len, addrss)
-        weights_len.write(tokenId, wgts_len)
+        ASSET_weights_len.write(tokenId, wgts_len)
         return ()
     end
 
@@ -644,7 +643,7 @@ namespace Asset:
             assert exists = TRUE
         end
 
-        let (local wgts_len) = weights_len.read(tokenId)
+        let (local wgts_len) = ASSET_weights_len.read(tokenId)
 
         let (local wgts_value) = alloc()
 
@@ -677,7 +676,7 @@ namespace Asset:
             assert exists = TRUE
         end
 
-        let (local addrs_len) = weights_len.read(tokenId)
+        let (local addrs_len) = ASSET_weights_len.read(tokenId)
 
         let (local addrs_value) = alloc()
 
@@ -693,7 +692,7 @@ namespace Asset:
             range_check_ptr
         }(
             tokenId : Uint256,
-            address: felt
+            addrs: felt
         ) -> (
             weight : felt,
             weight_base: felt
@@ -719,8 +718,8 @@ namespace Asset:
         end
 
 
-        let (weight)                    = _get_weight(address, wgts_len, wgts, addrss)
-        let (_weight_base)              = base_weight.read(tokenId)
+        let (weight)                    = _get_weight(addrs, wgts_len, wgts, addrss)
+        let (_weight_base)              = ASSET_base_weight.read(tokenId)
 
         with_attr error_message("weight cannot be 0"):
             assert_nn(weight)
@@ -775,7 +774,7 @@ namespace Asset:
             return ()
         end
 
-        weights.write(tokenId, wgts_len, [wgts])
+        ASSET_weights.write(tokenId, wgts_len, [wgts])
         _set_weights(tokenId, wgts_len - 1, wgts + 1)
         return ()
     end
@@ -795,7 +794,7 @@ namespace Asset:
             return ()
         end
 
-        addresses.write(tokenId, addrss_len, [addrss])
+        ASSET_addresses.write(tokenId, addrss_len, [addrss])
         _set_addresses(tokenId, addrss_len - 1, addrss + 1)
         return ()
     end
@@ -815,7 +814,7 @@ namespace Asset:
             return ()
         end
 
-        let (wgts_value_at_index) = weights.read(tokenId, wgts_len)
+        let (wgts_value_at_index) = ASSET_weights.read(tokenId, wgts_len)
         assert [wgts] = wgts_value_at_index
         _weights(tokenId, wgts_len - 1, wgts + 1)
         return ()
@@ -836,7 +835,7 @@ namespace Asset:
             return ()
         end
 
-        let (addrss_value_at_index) = addresses.read(tokenId, addrss_len)
+        let (addrss_value_at_index) = ASSET_addresses.read(tokenId, addrss_len)
         assert [addrss] = addrss_value_at_index
         _addresses(tokenId, addrss_len - 1, addrss + 1)
         return ()
@@ -999,7 +998,7 @@ namespace Asset:
         let (caller_address)   = get_caller_address()
         let (contract_address) = get_contract_address()
 
-        ERC721Enumerable.transfer_from(caller_address, contract_address, [sub_tokens])
+        ERC721.transfer_from(caller_address, contract_address, [sub_tokens])
 
         ASSET_sub_tokens.write(tokenId, sub_tokens_len, [sub_tokens])
         _set_sub_tokens(tokenId, sub_tokens_len - 1, sub_tokens + 1)
@@ -1027,7 +1026,7 @@ namespace Asset:
         let (contract_address) = get_contract_address()
 
         ERC721._approve(caller_address, [sub_tokens])
-        ERC721Enumerable.transfer_from(contract_address, caller_address, [sub_tokens])
+        ERC721.transfer_from(contract_address, caller_address, [sub_tokens])
 
         _reset_sub_tokens(tokenId, sub_tokens_len - 1, sub_tokens + 1)
         return ()
