@@ -17,19 +17,19 @@ from starkware.cairo.common.uint256 import Uint256
 
 @contract_interface
 namespace ItxFlow:
-    func increaseTokenId(address: felt, tokenId: Uint256, amount : Uint256) -> ():
+    func increaseTokenId(addrss: felt, tokenId: Uint256, amount : Uint256) -> ():
     end
 
-    func decreaseTokenId(address: felt, tokenId: Uint256, amount : Uint256) -> ():
+    func decreaseTokenId(addrss: felt, tokenId: Uint256, amount : Uint256) -> ():
     end
 
-    func lockedTokenId(address: felt, tokenId: Uint256) -> (locked_amount: Uint256, block_timestamp: felt):
+    func lockedTokenId(addrss: felt, tokenId: Uint256) -> (locked_amount: Uint256, block_timestamp: felt):
     end
 
-    func pauseTokenId(address: felt, tokenId: Uint256, paused: felt) -> ():
+    func pauseTokenId(addrss: felt, tokenId: Uint256, paused: felt) -> ():
     end
 
-    func transferTokenId(address: felt, tokenId: Uint256, addressTo: felt) -> ():
+    func transferTokenId(addrss: felt, tokenId: Uint256, addressTo: felt) -> ():
     end
 end
 
