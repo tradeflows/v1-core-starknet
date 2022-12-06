@@ -197,14 +197,14 @@ func increase{
         amount: Uint256
     ):
 
-    let (account)      = get_caller_address()
-    let (contract)     = get_contract_address()
-    let (base_address) = OUTFLOW_baseFlow.read()
+    let (account_address)   = get_caller_address()
+    let (contract_address)  = get_contract_address()
+    let (base_address)      = OUTFLOW_baseFlow.read()
 
-    IERC20.transferFrom(contract_address=base_address, sender=account, recipient=contract, amount=amount)
+    IERC20.transferFrom(contract_address=base_address, sender=account_address, recipient=contract_address, amount=amount)
     IERC20.approve(contract_address=base_address, spender=base_address, amount=amount)
 
-    ItxFlow.increaseTokenId(contract_address=base_address, addrss=account, tokenId=tokenId, amount=amount)
+    ItxFlow.increaseTokenId(contract_address=base_address, addrss=account_address, tokenId=tokenId, amount=amount)
     
     return ()
 end
@@ -220,10 +220,10 @@ func decrease{
         amount: Uint256
     ):
 
-    let (account)      = get_caller_address()
-    let (base_address) = OUTFLOW_baseFlow.read()
+    let (account_address)   = get_caller_address()
+    let (base_address)      = OUTFLOW_baseFlow.read()
 
-    ItxFlow.decreaseTokenId(contract_address=base_address, addrss=account, tokenId=tokenId, amount=amount)
+    ItxFlow.decreaseTokenId(contract_address=base_address, addrss=account_address, tokenId=tokenId, amount=amount)
     
     return ()
 end
@@ -239,10 +239,10 @@ func pause{
         paused: felt
     ):
 
-    let (account)      = get_caller_address()
+    let (account_address)   = get_caller_address()
     let (base_address) = OUTFLOW_baseFlow.read()
     
-    ItxFlow.pauseTokenId(contract_address=base_address, addrss=account, tokenId=tokenId, paused=paused)
+    ItxFlow.pauseTokenId(contract_address=base_address, addrss=account_address, tokenId=tokenId, paused=paused)
     
     return ()
 end
@@ -258,10 +258,10 @@ func transfer{
         address: felt
     ):
 
-    let (account)      = get_caller_address()
+    let (account_address)   = get_caller_address()
     let (base_address) = OUTFLOW_baseFlow.read()
     
-    ItxFlow.transferTokenId(contract_address=base_address, addrss=account, tokenId=tokenId, addressTo=address)
+    ItxFlow.transferTokenId(contract_address=base_address, addrss=account_address, tokenId=tokenId, addressTo=address)
     
     return ()
 end
