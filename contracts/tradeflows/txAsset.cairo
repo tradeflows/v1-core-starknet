@@ -346,7 +346,7 @@ func canAddPayment{
     end
 
     with_attr error_message("fee has not been paid"):
-        let (agreed, timestamp, counterpart) = Asset.isAgreed(tokenId)
+        let (agreed, _, _) = Asset.isAgreed(tokenId)
 
         assert agreed = TRUE
     end
@@ -368,7 +368,7 @@ func memberWeight{
         weight_base: felt
     ):
     
-    let (weight, weight_base) = Asset.getWeight(tokenId=tokenId, address=address)
+    let (weight, weight_base) = Asset.getWeight(tokenId=tokenId, addrs=address)
     return (weight=weight, weight_base=weight_base)
 end
 
@@ -500,7 +500,7 @@ func init{
     let (caller_address)    = get_caller_address()
     let (tokenId)           = Asset.init(counterpart, members_len, members, weights_len, weights)    
     
-    ERC721Enumerable._mint(caller_address, tokenId)
+    ERC721._mint(caller_address, tokenId)
     Asset.setMeta(tokenId, meta_len, meta)
     Asset.chargeFee(tokenId=tokenId, tokens_len=tokens_len, tokens=tokens)
     ReentrancyGuard._end()
