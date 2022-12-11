@@ -218,8 +218,8 @@ func setAssetAddress{
         syscall_ptr: felt*,
         pedersen_ptr: HashBuiltin*,
         range_check_ptr
-    }(address: felt):
+    }(addrs: felt):
     Ownable.assert_only_owner()
-    txAsset_address.write(address)
+    txAsset_address.write(addrs)
     return ()
 end
