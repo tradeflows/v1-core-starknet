@@ -291,9 +291,9 @@ namespace Asset:
             uint256_check(tokenId)
         end
         
-        let (agreed) = agreements_state.read(tokenId)
-        let (timestamp) = agreements_timestamp.read(tokenId)
-        let (counterpart) = agreements_counterpart.read(tokenId)
+        let (agreed)        = agreements_state.read(tokenId)
+        let (timestamp)     = agreements_timestamp.read(tokenId)
+        let (counterpart)   = agreements_counterpart.read(tokenId)
         
         return (agreed=agreed, timestamp=timestamp, counterpart_address=counterpart)
     end
@@ -517,8 +517,8 @@ namespace Asset:
             return ()
         end
 
-        let (agreement_terms_value_at_index) = assets_meta.read(tokenId, agreement_terms_len)
-        assert [agreement_terms] = agreement_terms_value_at_index
+        let (agreement_terms_value_at_index)    = assets_meta.read(tokenId, agreement_terms_len)
+        assert [agreement_terms]                = agreement_terms_value_at_index
         _asset_meta(tokenId, agreement_terms_len - 1, agreement_terms + 1)
         return ()
     end
@@ -564,7 +564,6 @@ namespace Asset:
         end
 
         let (local caller_address)  = get_caller_address()
-        let (contract_address)      = get_contract_address()
         
         with_attr error_message("no token in array"):
             let tok                 = [tokens]
@@ -643,9 +642,8 @@ namespace Asset:
             assert exists = TRUE
         end
 
-        let (local wgts_len) = ASSET_weights_len.read(tokenId)
-
-        let (local wgts_value) = alloc()
+        let (local wgts_len)    = ASSET_weights_len.read(tokenId)
+        let (local wgts_value)  = alloc()
 
         _weights(tokenId, wgts_len, wgts_value)
 
@@ -677,7 +675,6 @@ namespace Asset:
         end
 
         let (local addrs_len) = ASSET_weights_len.read(tokenId)
-
         let (local addrs_value) = alloc()
 
         _addresses(tokenId, addrs_len, addrs_value)
@@ -717,16 +714,13 @@ namespace Asset:
             assert wgts_len = addrss_len
         end
 
-
         let (weight)                    = _get_weight(addrs, wgts_len, wgts, addrss)
         let (_weight_base)              = ASSET_base_weight.read(tokenId)
 
         with_attr error_message("weight cannot be 0"):
             assert_nn(weight)
         end
-
         
-
         return (weight=weight, weight_base=_weight_base)
     end
 
@@ -886,7 +880,7 @@ namespace Asset:
             assert exists = TRUE
         end
 
-        let (local sub_tokens_len) = ASSET_sub_tokens_len.read(tokenId)
+        let (local sub_tokens_len)              = ASSET_sub_tokens_len.read(tokenId)
 
         let (local sub_tokens_value : Uint256*) = alloc()
 
