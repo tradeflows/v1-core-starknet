@@ -362,13 +362,13 @@ func memberWeight{
         range_check_ptr
     }(
         tokenId: Uint256, 
-        address: felt
+        addrs: felt
     ) -> (
         weight: felt,
         weight_base: felt
     ):
     
-    let (weight, weight_base) = Asset.getWeight(tokenId=tokenId, addrs=address)
+    let (weight, weight_base) = Asset.getWeight(tokenId=tokenId, addrs=addrs)
     return (weight=weight, weight_base=weight_base)
 end
 
