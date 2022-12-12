@@ -549,6 +549,7 @@ func setFee{
         amount: Uint256
     ) -> ():
     ReentrancyGuard._start()
+    Ownable.assert_only_owner()
     ASSET_fees.write(tokenAddress, amount)
     ReentrancyGuard._end()
     return ()
