@@ -230,7 +230,7 @@ end
 
 # Pause a flow
 @external
-func pause{
+func pauseStream{
         syscall_ptr : felt*, 
         pedersen_ptr : HashBuiltin*, 
         range_check_ptr
