@@ -365,7 +365,7 @@ func withdrawAmount{
 
     let tokenId  = Uint256(0,0)
 
-    let (available_amount, locked_amount, block_timestamp) = Flow.getWithdrawAmount(beneficiary_address, tokenId)
+    let (available_amount, locked_amount, block_timestamp) = Flow.getWithdrawAmount(beneficiary_address, tokenId, TRUE)
     return (available_amount=available_amount, locked_amount=locked_amount, block_timestamp=block_timestamp)
 end
 
@@ -384,7 +384,7 @@ func withdrawAmountNFT{
          block_timestamp: felt
     ):
 
-    let (available_amount, locked_amount, block_timestamp) = Flow.getWithdrawAmount(beneficiary_address, beneficiary_tokenId)
+    let (available_amount, locked_amount, block_timestamp) = Flow.getWithdrawAmount(beneficiary_address, beneficiary_tokenId, FALSE)
     return (available_amount=available_amount, locked_amount=locked_amount, block_timestamp=block_timestamp)
 end
 

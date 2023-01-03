@@ -626,7 +626,8 @@ namespace Flow:
             range_check_ptr
         }(
             beneficiary_address: felt,
-            beneficiary_tokenId: Uint256
+            beneficiary_tokenId: Uint256,
+            weight: felt
         ) -> (
             available_amount: Uint256, 
             locked_amount: Uint256, 
@@ -642,8 +643,8 @@ namespace Flow:
         let (block_timestamp)                   = get_block_timestamp()
         let (count)                             = FLOW_in_count.read(beneficiary=beneficiary_address, tokenId=beneficiary_tokenId)
 
-        let (available_amount, locked_amount)   = aggregatedAmount(beneficiary_address, beneficiary_tokenId, block_timestamp, count)
-        let (available_amount, locked_amount)   = weightMembership(beneficiary_address, beneficiary_tokenId, available_amount, locked_amount)
+        let (available_amount, locked_amount)   = aggregatedAmount(beneficiary_address, beneficiary_tokenId, block_timestamp, count-1)
+        let (available_amount, locked_amount)   = weightMembership(beneficiary_address, beneficiary_tokenId, available_amount, locked_amount, weight)
             
         return (available_amount=available_amount, locked_amount=locked_amount, block_timestamp=block_timestamp)
     end
@@ -886,7 +887,8 @@ namespace Flow:
             beneficiary_address: felt,
             beneficiary_tokenId: Uint256,
             available_amount: Uint256, 
-            locked_amount: Uint256
+            locked_amount: Uint256,
+            weight: felt
         ) -> (
             available: Uint256, 
             locked: Uint256
@@ -897,15 +899,19 @@ namespace Flow:
         if caller_address == beneficiary_address:
             return (available_amount, locked_amount)
         else:
-            let (weight, weight_base)                    = ItxAsset.memberWeight(contract_address=beneficiary_address, tokenId=beneficiary_tokenId, address=caller_address)
+            if weight == TRUE:
+                return (available_amount, locked_amount)
+            else:
+                let (_weight, weight_base)                    = ItxAsset.memberWeight(contract_address=beneficiary_address, tokenId=beneficiary_tokenId, address=caller_address)
 
-            let (available_amount)                       = SafeUint256.mul(available_amount, Uint256(weight,0))
-            let (available_amount, _)                    = SafeUint256.div_rem(available_amount, Uint256(weight_base,0))
-            
-            let (locked_amount)                          = SafeUint256.mul(locked_amount, Uint256(weight,0))
-            let (locked_amount, _)                       = SafeUint256.div_rem(locked_amount, Uint256(weight_base,0))
-            
-            return (available_amount, locked_amount)
+                let (available_amount)                       = SafeUint256.mul(available_amount, Uint256(_weight,0))
+                let (available_amount, _)                    = SafeUint256.div_rem(available_amount, Uint256(weight_base,0))
+                
+                let (locked_amount)                          = SafeUint256.mul(locked_amount, Uint256(_weight,0))
+                let (locked_amount, _)                       = SafeUint256.div_rem(locked_amount, Uint256(weight_base,0))
+                
+                return (available_amount, locked_amount)
+            end
         end
     end
 
