@@ -681,7 +681,7 @@ namespace Flow:
             return (locked_amount=locked_amount)
         end
 
-        let (start_le_block)            = is_le(block_timestamp-1, stream.start_time)
+        let (start_le_block)            = is_le(block_timestamp, stream.start_time)
         if start_le_block == TRUE:
             let (locked_amount)         = SafeUint256.add(stream.locked_amount, inner_locked_amount)
             return (locked_amount=locked_amount)
@@ -709,7 +709,7 @@ namespace Flow:
         let (block_timestamp)           = get_block_timestamp()
         let (count)                     = FLOW_out_count.read(payer=payer_address)
 
-        let (locked_amount)             = _streams_aggregated_locked_amount_out(payer_address, block_timestamp, count)
+        let (locked_amount)             = _streams_aggregated_locked_amount_out(payer_address, block_timestamp, count-1)
         
         return (locked_amount=locked_amount, block_timestamp=block_timestamp)
     end
