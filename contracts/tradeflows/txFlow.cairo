@@ -377,7 +377,7 @@ func withdrawAmountNFT{
         range_check_ptr
     }(
         beneficiary_address: felt, 
-        beneficiary_tokenId: Uint256,
+        beneficiary_tokenId: Uint256
     ) -> (
          available_amount: Uint256, 
          locked_amount: Uint256, 
@@ -705,14 +705,15 @@ func lockedTokenId{
         range_check_ptr
     }(
         address: felt,
-        tokenId: Uint256
+        tokenId: Uint256,
+        idx: felt
     ) -> (
         locked_amount: Uint256, 
         block_timestamp: felt
     ):
     alloc_locals
 
-    let (idStruct)                          = FLOW_id_streams.read(tokenId)
+    let (idStruct)                          = FLOW_id_streams.read(tokenId, idx)
     
     with_attr error_message("tokenId not found"):
         assert_not_zero(idStruct.beneficiary)
@@ -741,6 +742,7 @@ func increaseTokenId{
     }(
         addrss: felt,
         tokenId: Uint256,
+        idx: felt,
         amount : Uint256
     ) -> ():
     ReentrancyGuard._start()
@@ -748,11 +750,11 @@ func increaseTokenId{
     let (outFlow)  = FLOW_OutFlow_address.read()
     let (caller)   = get_caller_address()
 
-    with_attr error_message("tokenId not found"):
+    with_attr error_message("incorrect caller"):
         assert outFlow = caller
     end
 
-    let (idStruct) = FLOW_id_streams.read(tokenId)
+    let (idStruct) = FLOW_id_streams.read(tokenId, idx)
     
     with_attr error_message("tokenId not found"):
         assert_not_zero(idStruct.beneficiary)
@@ -778,6 +780,7 @@ func decreaseTokenId{
     }(
         addrss: felt,
         tokenId: Uint256,
+        idx: felt,
         amount : Uint256
     ) -> ():
     ReentrancyGuard._start()
@@ -785,11 +788,11 @@ func decreaseTokenId{
     let (outFlow)  = FLOW_OutFlow_address.read()
     let (caller)   = get_caller_address()
 
-    with_attr error_message("tokenId not found"):
+    with_attr error_message("incorrect caller"):
         assert outFlow = caller
     end
 
-    let (idStruct) = FLOW_id_streams.read(tokenId)
+    let (idStruct) = FLOW_id_streams.read(tokenId, idx)
 
     with_attr error_message("tokenId not found"):
         assert_not_zero(idStruct.beneficiary)
@@ -815,6 +818,7 @@ func pauseTokenId{
     }(
         addrss: felt,
         tokenId: Uint256,
+        idx: felt,
         paused: felt
     ) -> ():
     ReentrancyGuard._start()
@@ -822,11 +826,11 @@ func pauseTokenId{
     let (outFlow)     = FLOW_OutFlow_address.read()
     let (caller)      = get_caller_address()
 
-    with_attr error_message("tokenId not found"):
+    with_attr error_message("incorrect caller"):
         assert outFlow = caller
     end
     
-    let (idStruct)    = FLOW_id_streams.read(tokenId)
+    let (idStruct)    = FLOW_id_streams.read(tokenId, idx)
 
     with_attr error_message("tokenId not found"):
         assert_not_zero(idStruct.beneficiary)
@@ -854,6 +858,7 @@ func transferTokenId{
     }(
         addrss: felt,
         tokenId: Uint256,
+        idx: felt,
         addressTo: felt
     ) -> ():
     ReentrancyGuard._start()
@@ -861,11 +866,11 @@ func transferTokenId{
     let (outFlow)     = FLOW_OutFlow_address.read()
     let (caller)      = get_caller_address()
 
-    with_attr error_message("tokenId not found"):
+    with_attr error_message("incorrect caller"):
         assert outFlow = caller
     end
     
-    let (idStruct)    = FLOW_id_streams.read(tokenId)
+    let (idStruct)    = FLOW_id_streams.read(tokenId, idx)
 
     with_attr error_message("tokenId not found"):
         assert_not_zero(idStruct.beneficiary)

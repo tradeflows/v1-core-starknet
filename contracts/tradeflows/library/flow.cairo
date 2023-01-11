@@ -118,14 +118,9 @@ end
 func FLOW_base_token() -> (token_address: felt):
 end
 
-# Storage of the number of NFTs minted which is used as a counter
-@storage_var
-func id_counter() -> (counter: Uint256):
-end
-
 # Storage of the stream given the receivers address and the stream's index.
 @storage_var
-func FLOW_id_streams(tokenId: Uint256) -> (idStructure: MaturityStreamIDStructure):
+func FLOW_id_streams(tokenId: Uint256, idx: felt) -> (idStructure: MaturityStreamIDStructure):
 end
 
 # Storage of the out flow escrow address
@@ -328,10 +323,8 @@ namespace Flow:
         FLOW_out_count.write(contract_address, new_custody_count_to)
         
 
-        let (tokenId : Uint256) = id_counter.read()
-        let (next_tokenId)      = SafeUint256.add(tokenId, Uint256(1,0))
-        id_counter.write(next_tokenId)
-        FLOW_id_streams.write(tokenId, MaturityStreamIDStructure(beneficiary_address, beneficiary_tokenId, count))
+        let (tokenId : Uint256) = beneficiary_tokenId
+        FLOW_id_streams.write(tokenId, count, MaturityStreamIDStructure(beneficiary_address, beneficiary_tokenId, count))
 
         add_maturity_stream_called.emit(tokenId=tokenId, flow_id= count, payer=payer_address, target_amount=target_amount, initial_amount=initial_amount, count=new_count, start_time=start, last_reset_time=start, maturity_time=maturity)
         ERC20.transfer(contract_address, initial_amount)
