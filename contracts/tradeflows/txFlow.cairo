@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows ERC20 Wrapper Contracts for Cairo v0.3.0 (tradeflows/txFlow.cairo)
+# TradeFlows ERC20 Wrapper Contracts for Cairo v0.4.0 (tradeflows/txFlow.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  
@@ -450,16 +450,19 @@ func streamIn{
         idx: felt
     ) -> (
         from_address: felt, 
+        target: Uint256, 
+        initial: Uint256,
         amount: Uint256, 
-        initial_amount: Uint256, 
+        total_withdraw: Uint256,
         last_withdraw: Uint256, 
         start_time: felt, 
         last_reset_time: felt, 
-        maturity_time: felt
+        maturity_time: felt,
+        is_paused: felt
     ):
 
-    let (from_address, amount, initial_amount, last_withdraw, start_time, last_reset_time, maturity_time) = Flow.streamIn(beneficiary_address, beneficiary_tokenId, idx)
-    return (from_address=from_address, amount=amount, initial_amount=initial_amount, last_withdraw=last_withdraw, start_time=start_time, last_reset_time=last_reset_time, maturity_time=maturity_time)
+    let (from_address, target, initial, amount, total_withdraw, last_withdraw, start_time, last_reset_time, maturity_time, is_paused) = Flow.streamIn(beneficiary_address, beneficiary_tokenId, idx)
+    return (from_address=from_address, target=target, initial=initial, amount=amount, total_withdraw=total_withdraw, last_withdraw=last_withdraw, start_time=start_time, last_reset_time=last_reset_time, maturity_time=maturity_time, is_paused=is_paused)
 end
 
 # Get the stream paid to wallet
@@ -474,15 +477,18 @@ func streamOut{
         idx: felt
     ) -> (
         from_address: felt, 
+        target: Uint256, 
+        initial: Uint256,
         amount: Uint256, 
-        initial_amount: Uint256, 
+        total_withdraw: Uint256, 
         last_withdraw: Uint256, 
         start_time: felt, 
         last_reset_time: felt, 
-        maturity_time: felt
+        maturity_time: felt,
+        is_paused:felt
     ):
-    let (from_address, amount, initial_amount, last_withdraw, start_time, last_reset_time, maturity_time) = Flow.streamOut(beneficiary_address, beneficiary_tokenId, idx)
-    return (from_address=from_address, amount=amount, initial_amount=initial_amount, last_withdraw=last_withdraw, start_time=start_time, last_reset_time=last_reset_time, maturity_time=maturity_time)
+    let (from_address, target, initial, amount, total_withdraw, last_withdraw, start_time, last_reset_time, maturity_time, is_paused) = Flow.streamOut(beneficiary_address, beneficiary_tokenId, idx)
+    return (from_address=from_address, target=target, initial=initial, amount=amount, total_withdraw=total_withdraw, last_withdraw=last_withdraw, start_time=start_time, last_reset_time=last_reset_time, maturity_time=maturity_time, is_paused=is_paused)
 end
 
 
@@ -832,7 +838,7 @@ func pauseTokenId{
         assert stream.payer = addrss
     end
 
-    let edited_stream = MaturityStreamStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=paused)
+    let edited_stream = MaturityStreamStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=paused)
     FLOW_in.write(idStruct.beneficiary, idStruct.tokenId, idStruct.idx, edited_stream)
     
     ReentrancyGuard._end()
@@ -871,7 +877,7 @@ func transferTokenId{
         assert stream.payer = addrss
     end
 
-    let edited_stream = MaturityStreamStructure(payer=addressTo, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused)
+    let edited_stream = MaturityStreamStructure(payer=addressTo, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused)
     FLOW_in.write(idStruct.beneficiary, idStruct.tokenId, idStruct.idx, edited_stream)
     
     ReentrancyGuard._end()

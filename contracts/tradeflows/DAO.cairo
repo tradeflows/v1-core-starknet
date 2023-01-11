@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows DAO ERC20 Contracts for Cairo v0.3.0 (tradeflows/DAO.cairo)
+# TradeFlows DAO ERC20 Contracts for Cairo v0.4.0 (tradeflows/DAO.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  

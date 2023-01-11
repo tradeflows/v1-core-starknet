@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows Dharma Interface for Cairo v0.3.0 (tradeflows/interfaces/ItxDharma.cairo)
+# TradeFlows Dharma Interface for Cairo v0.4.0 (tradeflows/interfaces/ItxDharma.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  

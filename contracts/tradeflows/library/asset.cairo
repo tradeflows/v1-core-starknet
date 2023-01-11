@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows Asset library for Cairo v0.3.0 (tradeflows/library/asset.cairo)
+# TradeFlows Asset library for Cairo v0.4.0 (tradeflows/library/asset.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  
