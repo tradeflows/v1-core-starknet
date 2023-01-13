@@ -440,7 +440,7 @@ end
 
 # Get the stream paid from wallet
 @view
-func streamIn{
+func getStream{
         syscall_ptr: felt*, 
         pedersen_ptr: HashBuiltin*, 
         range_check_ptr
@@ -449,6 +449,7 @@ func streamIn{
         beneficiary_tokenId: Uint256,
         idx: felt
     ) -> (
+        streamId: Uint256, 
         from_address: felt, 
         target: Uint256, 
         initial: Uint256,
@@ -458,38 +459,40 @@ func streamIn{
         start_time: felt, 
         last_reset_time: felt, 
         maturity_time: felt,
-        is_paused: felt
+        is_paused: felt,
+        available_amount: Uint256,
+        locked_amount: Uint256
     ):
 
-    let (from_address, target, initial, amount, total_withdraw, last_withdraw, start_time, last_reset_time, maturity_time, is_paused) = Flow.streamIn(beneficiary_address, beneficiary_tokenId, idx)
-    return (from_address=from_address, target=target, initial=initial, amount=amount, total_withdraw=total_withdraw, last_withdraw=last_withdraw, start_time=start_time, last_reset_time=last_reset_time, maturity_time=maturity_time, is_paused=is_paused)
+    let (streamId, from_address, target, initial, amount, total_withdraw, last_withdraw, start_time, last_reset_time, maturity_time, is_paused, available_amount, locked_amount) = Flow.getStream(beneficiary_address, beneficiary_tokenId, idx)
+    return (streamId=streamId, from_address=from_address, target=target, initial=initial, amount=amount, total_withdraw=total_withdraw, last_withdraw=last_withdraw, start_time=start_time, last_reset_time=last_reset_time, maturity_time=maturity_time, is_paused=is_paused, available_amount=available_amount, locked_amount=locked_amount)
 end
 
 # Get the stream paid to wallet
-@view
-func streamOut{
-        syscall_ptr: felt*, 
-        pedersen_ptr: HashBuiltin*, 
-        range_check_ptr
-    }(
-        beneficiary_address: felt, 
-        beneficiary_tokenId: Uint256,
-        idx: felt
-    ) -> (
-        from_address: felt, 
-        target: Uint256, 
-        initial: Uint256,
-        amount: Uint256, 
-        total_withdraw: Uint256, 
-        last_withdraw: Uint256, 
-        start_time: felt, 
-        last_reset_time: felt, 
-        maturity_time: felt,
-        is_paused:felt
-    ):
-    let (from_address, target, initial, amount, total_withdraw, last_withdraw, start_time, last_reset_time, maturity_time, is_paused) = Flow.streamOut(beneficiary_address, beneficiary_tokenId, idx)
-    return (from_address=from_address, target=target, initial=initial, amount=amount, total_withdraw=total_withdraw, last_withdraw=last_withdraw, start_time=start_time, last_reset_time=last_reset_time, maturity_time=maturity_time, is_paused=is_paused)
-end
+#@view
+#func getStream{
+#        syscall_ptr: felt*, 
+#        pedersen_ptr: HashBuiltin*, 
+#        range_check_ptr
+#    }(
+#        beneficiary_address: felt, 
+#        beneficiary_tokenId: Uint256,
+#        idx: felt
+#    ) -> (
+#        from_address: felt, 
+#        target: Uint256, 
+#        initial: Uint256,
+#        amount: Uint256, 
+#        total_withdraw: Uint256, 
+#        last_withdraw: Uint256, 
+#        start_time: felt, 
+#        last_reset_time: felt, 
+#        maturity_time: felt,
+#        is_paused:felt
+#    ):
+#    let (from_address, target, initial, amount, total_withdraw, last_withdraw, start_time, last_reset_time, maturity_time, is_paused) = Flow.getStream(beneficiary_address, beneficiary_tokenId, idx)
+#    return (from_address=from_address, target=target, initial=initial, amount=amount, total_withdraw=total_withdraw, last_withdraw=last_withdraw, start_time=start_time, last_reset_time=last_reset_time, maturity_time=maturity_time, is_paused=is_paused)
+#end
 
 
 
@@ -699,21 +702,20 @@ end
 
 # Get the locked amount to be paid by flow given tokenId
 @view
-func lockedTokenId{
+func amountTokenId{
         syscall_ptr: felt*, 
         pedersen_ptr: HashBuiltin*, 
         range_check_ptr
     }(
-        address: felt,
-        tokenId: Uint256,
-        idx: felt
+        tokenId: Uint256
     ) -> (
+        available_amount: Uint256, 
         locked_amount: Uint256, 
         block_timestamp: felt
     ):
     alloc_locals
 
-    let (idStruct)                          = FLOW_id_streams.read(tokenId, idx)
+    let (idStruct)                          = FLOW_id_streams.read(tokenId)
     
     with_attr error_message("tokenId not found"):
         assert_not_zero(idStruct.beneficiary)
@@ -721,16 +723,10 @@ func lockedTokenId{
 
     let (stream)                            = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
     
-    if stream.payer == address: 
-
-        let (block_timestamp)               = get_block_timestamp()    
-        let (available_amount,locked_amount)= Flow.calc_stream(stream, block_timestamp)
-        
-        return (locked_amount=locked_amount, block_timestamp=block_timestamp)
-    else:
-        let (block_timestamp)               = get_block_timestamp()
-        return (locked_amount=Uint256(0,0), block_timestamp=block_timestamp)
-    end
+    let (block_timestamp)                   = get_block_timestamp()    
+    let (available_amount,locked_amount)    = Flow.calc_stream(stream, block_timestamp)
+    
+    return (available_amount=available_amount, locked_amount=locked_amount, block_timestamp=block_timestamp)
 end
 
 # Increase locked amount for an existing stream by tokenId
@@ -742,7 +738,6 @@ func increaseTokenId{
     }(
         addrss: felt,
         tokenId: Uint256,
-        idx: felt,
         amount : Uint256
     ) -> ():
     ReentrancyGuard._start()
@@ -754,7 +749,7 @@ func increaseTokenId{
         assert outFlow = caller
     end
 
-    let (idStruct) = FLOW_id_streams.read(tokenId, idx)
+    let (idStruct) = FLOW_id_streams.read(tokenId)
     
     with_attr error_message("tokenId not found"):
         assert_not_zero(idStruct.beneficiary)
@@ -780,7 +775,6 @@ func decreaseTokenId{
     }(
         addrss: felt,
         tokenId: Uint256,
-        idx: felt,
         amount : Uint256
     ) -> ():
     ReentrancyGuard._start()
@@ -792,7 +786,7 @@ func decreaseTokenId{
         assert outFlow = caller
     end
 
-    let (idStruct) = FLOW_id_streams.read(tokenId, idx)
+    let (idStruct) = FLOW_id_streams.read(tokenId)
 
     with_attr error_message("tokenId not found"):
         assert_not_zero(idStruct.beneficiary)
@@ -818,7 +812,6 @@ func pauseTokenId{
     }(
         addrss: felt,
         tokenId: Uint256,
-        idx: felt,
         paused: felt
     ) -> ():
     ReentrancyGuard._start()
@@ -830,7 +823,7 @@ func pauseTokenId{
         assert outFlow = caller
     end
     
-    let (idStruct)    = FLOW_id_streams.read(tokenId, idx)
+    let (idStruct)    = FLOW_id_streams.read(tokenId)
 
     with_attr error_message("tokenId not found"):
         assert_not_zero(idStruct.beneficiary)
@@ -842,7 +835,7 @@ func pauseTokenId{
         assert stream.payer = addrss
     end
 
-    let edited_stream = MaturityStreamStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=paused)
+    let edited_stream = MaturityStreamStructure( payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=paused, streamId=stream.streamId)
     FLOW_in.write(idStruct.beneficiary, idStruct.tokenId, idStruct.idx, edited_stream)
     
     ReentrancyGuard._end()
@@ -858,7 +851,6 @@ func transferTokenId{
     }(
         addrss: felt,
         tokenId: Uint256,
-        idx: felt,
         addressTo: felt
     ) -> ():
     ReentrancyGuard._start()
@@ -870,7 +862,7 @@ func transferTokenId{
         assert outFlow = caller
     end
     
-    let (idStruct)    = FLOW_id_streams.read(tokenId, idx)
+    let (idStruct)    = FLOW_id_streams.read(tokenId)
 
     with_attr error_message("tokenId not found"):
         assert_not_zero(idStruct.beneficiary)
@@ -882,7 +874,7 @@ func transferTokenId{
         assert stream.payer = addrss
     end
 
-    let edited_stream = MaturityStreamStructure(payer=addressTo, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused)
+    let edited_stream = MaturityStreamStructure(payer=addressTo, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused, streamId=stream.streamId)
     FLOW_in.write(idStruct.beneficiary, idStruct.tokenId, idStruct.idx, edited_stream)
     
     ReentrancyGuard._end()
