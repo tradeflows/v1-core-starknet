@@ -531,6 +531,10 @@ namespace Flow:
             return (available_amount= stream.locked_amount, locked_amount=Uint256(0,0))
         end
 
+        if stream.maturity_time == stream.start_time:
+            return (available_amount=Uint256(0,0), locked_amount=stream.locked_amount)
+        end
+
         let time_elapsed                = block_timestamp - stream.last_reset_time 
         let time_total                  = stream.maturity_time - stream.last_reset_time
 
