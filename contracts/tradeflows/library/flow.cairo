@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows Flow library for Cairo v0.4.0 (tradeflows/library/flow.cairo)
+# TradeFlows Flow library for Cairo v0.5.0 (tradeflows/library/flow.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  
@@ -43,6 +43,15 @@ from openzeppelin.security.safemath.library import SafeUint256
 from openzeppelin.access.ownable.library import Ownable
 
 from tradeflows.interfaces.ItxAsset import ItxAsset
+from tradeflows.interfaces.ItxOracle import ItxOracle
+
+# Meta data
+struct Meta:
+    member description      : felt
+    member oracle_address   : felt
+    member oracle_key       : felt
+    member oracle_value     : felt
+end
 
 # Maturity Stream 
 struct MaturityStreamStructure:
@@ -60,6 +69,7 @@ struct MaturityStreamStructure:
     member is_nft           : felt
     member is_paused        : felt
     member streamId         : Uint256
+    member meta             : Meta
 end
 
 # Maturity Stream ID
@@ -257,7 +267,11 @@ namespace Flow:
             initial_amount: Uint256,
             start: felt,
             maturity: felt,
-            is_nft: felt
+            is_nft: felt,
+            description: felt,
+            oracle_address: felt,
+            oracle_key: felt,
+            oracle_value: felt
         ) -> (
             streamId : Uint256
         ):
@@ -304,7 +318,7 @@ namespace Flow:
         let (next_streamId)     = SafeUint256.add(streamId, Uint256(1,0))
         id_counter.write(next_streamId)
         
-        let new_stream          = MaturityStreamStructure(payer=payer_address, beneficiary=beneficiary_address, tokenId=beneficiary_tokenId, target_amount=target_amount, initial_amount=initial_amount, locked_amount=initial_amount, total_withdraw=uint256_0, last_withdraw=uint256_0, start_time=start, last_reset_time=start, maturity_time=maturity, is_nft=is_nft, is_paused=FALSE, streamId=streamId)
+        let new_stream          = MaturityStreamStructure(payer=payer_address, beneficiary=beneficiary_address, tokenId=beneficiary_tokenId, target_amount=target_amount, initial_amount=initial_amount, locked_amount=initial_amount, total_withdraw=uint256_0, last_withdraw=uint256_0, start_time=start, last_reset_time=start, maturity_time=maturity, is_nft=is_nft, is_paused=FALSE, streamId=streamId, meta=Meta(description, oracle_address, oracle_key, oracle_value))
 
         let (count)             = FLOW_in_count.read(beneficiary=beneficiary_address, tokenId=beneficiary_tokenId)
 
@@ -381,7 +395,7 @@ namespace Flow:
 
         ERC20.transfer(contract_address, amount)
 
-        let edited_stream       = MaturityStreamStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=new_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused, streamId=stream.streamId)
+        let edited_stream       = MaturityStreamStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=new_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused, streamId=stream.streamId, meta=stream.meta)
         FLOW_in.write(beneficiary_address, beneficiary_tokenId, id, edited_stream)
         
         return (caller_address=payer_address)
@@ -428,7 +442,7 @@ namespace Flow:
         
         ERC20.transfer_from(contract_address, stream.payer, amount)        
 
-        let edited_stream       = MaturityStreamStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=new_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.locked_amount, start_time=stream.start_time, last_reset_time=block_timestamp, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused, streamId=stream.streamId)
+        let edited_stream       = MaturityStreamStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=new_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.locked_amount, start_time=stream.start_time, last_reset_time=block_timestamp, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused, streamId=stream.streamId, meta=stream.meta)
         FLOW_in.write(beneficiary_address, beneficiary_tokenId, id, edited_stream)
 
         return (caller_address=payer_address)
@@ -535,24 +549,53 @@ namespace Flow:
             return (available_amount=Uint256(0,0), locked_amount=stream.locked_amount)
         end
 
-        let time_elapsed                = block_timestamp - stream.last_reset_time 
-        let time_total                  = stream.maturity_time - stream.last_reset_time
+        let (oracle_address_flag)       = is_nn(stream.meta.oracle_address)
+        if oracle_address_flag == TRUE:
+            let (value)                 = ItxOracle.getValue(contract_address=stream.meta.oracle_address, key=stream.meta.oracle_key)
+            if value == stream.meta.oracle_value:
+                let time_elapsed                = block_timestamp - stream.last_reset_time 
+                let time_total                  = stream.maturity_time - stream.last_reset_time
 
-        let time_elapsed_uint256        = Uint256(low=time_elapsed, high=0)
-        let time_total_uint256          = Uint256(low=time_total, high=0)
-        
-        let (target_sub_total)          = SafeUint256.sub_le(stream.target_amount, stream.total_withdraw)
-        let (amount_time_elapsed, _)    = SafeUint256.div_rem(target_sub_total, time_total_uint256)
-        let (payout)                    = SafeUint256.mul(amount_time_elapsed, time_elapsed_uint256)
+                let time_elapsed_uint256        = Uint256(low=time_elapsed, high=0)
+                let time_total_uint256          = Uint256(low=time_total, high=0)
+                
+                let (target_sub_total)          = SafeUint256.sub_le(stream.target_amount, stream.total_withdraw)
+                let (amount_time_elapsed, _)    = SafeUint256.div_rem(target_sub_total, time_total_uint256)
+                let (payout)                    = SafeUint256.mul(amount_time_elapsed, time_elapsed_uint256)
 
-        let (error)                     = uint256_le(stream.locked_amount, payout)
-        if error == TRUE:
-            return (available_amount=stream.locked_amount, locked_amount=Uint256(0,0))
-        end    
+                let (error)                     = uint256_le(stream.locked_amount, payout)
+                if error == TRUE:
+                    return (available_amount=stream.locked_amount, locked_amount=Uint256(0,0))
+                end    
 
-        let (locked)                    = SafeUint256.sub_le(stream.locked_amount, payout)
-        
-        return (available_amount=payout, locked_amount=locked)
+                let (locked)                    = SafeUint256.sub_le(stream.locked_amount, payout)
+                
+                return (available_amount=payout, locked_amount=locked)
+            else:
+                return (available_amount=Uint256(0,0), locked_amount=stream.locked_amount)
+            end
+            
+        else:
+
+            let time_elapsed                = block_timestamp - stream.last_reset_time 
+            let time_total                  = stream.maturity_time - stream.last_reset_time
+
+            let time_elapsed_uint256        = Uint256(low=time_elapsed, high=0)
+            let time_total_uint256          = Uint256(low=time_total, high=0)
+            
+            let (target_sub_total)          = SafeUint256.sub_le(stream.target_amount, stream.total_withdraw)
+            let (amount_time_elapsed, _)    = SafeUint256.div_rem(target_sub_total, time_total_uint256)
+            let (payout)                    = SafeUint256.mul(amount_time_elapsed, time_elapsed_uint256)
+
+            let (error)                     = uint256_le(stream.locked_amount, payout)
+            if error == TRUE:
+                return (available_amount=stream.locked_amount, locked_amount=Uint256(0,0))
+            end    
+
+            let (locked)                    = SafeUint256.sub_le(stream.locked_amount, payout)
+            
+            return (available_amount=payout, locked_amount=locked)
+        end
     end
 
     # Recursive helper function to get the available and locked amounts to the caller wallet is able to withdraw
@@ -746,7 +789,7 @@ namespace Flow:
                 let remaining                                   = uint256_0
                 let (total_withdraw)                            = SafeUint256.add(stream.total_withdraw, stream.locked_amount)
             
-                let edited_stream                               = MaturityStreamStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=remaining, total_withdraw=total_withdraw, last_withdraw=stream.locked_amount, start_time=stream.start_time, last_reset_time=block_timestamp, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused, streamId=stream.streamId)
+                let edited_stream                               = MaturityStreamStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=remaining, total_withdraw=total_withdraw, last_withdraw=stream.locked_amount, start_time=stream.start_time, last_reset_time=block_timestamp, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused, streamId=stream.streamId, meta=stream.meta)
                 FLOW_in.write(beneficiary_address, beneficiary_tokenId, idx, edited_stream)
 
                 withdraw_called.emit(payer=beneficiary_address, amount=stream.locked_amount, locked_amount=uint256_0, total_withdraw= stream.total_withdraw, start_time=stream.start_time, maturity_time=stream.maturity_time, block_time=block_timestamp)
@@ -768,7 +811,7 @@ namespace Flow:
 
                     let (total_withdraw)                        = SafeUint256.add(stream.total_withdraw, payout)
 
-                    let edited_stream                           = MaturityStreamStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=locked, total_withdraw=total_withdraw, last_withdraw=payout, start_time=stream.start_time, last_reset_time=block_timestamp, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused, streamId=stream.streamId)
+                    let edited_stream                           = MaturityStreamStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=locked, total_withdraw=total_withdraw, last_withdraw=payout, start_time=stream.start_time, last_reset_time=block_timestamp, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused, streamId=stream.streamId, stream.meta)
                     FLOW_in.write(beneficiary_address, beneficiary_tokenId, idx, edited_stream)
 
                     let (available_amount)                      = SafeUint256.add(payout, inner_available_amount)

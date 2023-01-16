@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows OutFlows ERC1155 Contracts for Cairo v0.4.0 (tradeflows/txOutFlow.cairo)
+# TradeFlows OutFlows ERC1155 Contracts for Cairo v0.5.0 (tradeflows/txOutFlow.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  

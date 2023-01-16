@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows Asset ERC721 Contracts for Cairo v0.4.0 (tradeflows/txAsset.cairo)
+# TradeFlows Asset ERC721 Contracts for Cairo v0.5.0 (tradeflows/txAsset.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-# TradeFlows ERC20 Wrapper Contracts for Cairo v0.4.0 (tradeflows/txFlow.cairo)
+# TradeFlows ERC20 Wrapper Contracts for Cairo v0.5.0 (tradeflows/txFlow.cairo)
 #
 #  _____             _     ______ _                   
 # |_   _|           | |    |  ___| |                  
@@ -24,7 +24,7 @@ from openzeppelin.token.erc20.interfaces.IERC20 import IERC20
 from openzeppelin.security.safemath.library import SafeUint256
 from openzeppelin.access.ownable.library import Ownable
 
-from tradeflows.library.flow import FLOW_in, FLOW_in_count, FLOW_base_token, FLOW_id_streams, FLOW_OutFlow_address, MaturityStreamStructure, Flow
+from tradeflows.library.flow import FLOW_in, FLOW_in_count, FLOW_base_token, FLOW_id_streams, FLOW_OutFlow_address, MaturityStreamStructure, Meta, Flow
 from tradeflows.library.asset import Asset
 
 
@@ -555,7 +555,11 @@ func addMaturityStream{
         target_amount: Uint256, 
         initial_amount: Uint256, 
         start: felt,
-        maturity: felt
+        maturity: felt,
+        description: felt, 
+        oracle_address: felt, 
+        oracle_key: felt,
+        oracle_value: felt
     ) -> (
         flowId: Uint256
     ):
@@ -569,7 +573,7 @@ func addMaturityStream{
         assert_not_equal(payer_address, contract_address)
     end 
 
-    let (flowId)    = Flow.addMaturityStream(beneficiary_address, beneficiary_tokenId, target_amount, initial_amount, start, maturity, FALSE)
+    let (flowId)    = Flow.addMaturityStream(beneficiary_address, beneficiary_tokenId, target_amount, initial_amount, start, maturity, FALSE, description, oracle_address, oracle_key, oracle_value)
     ReentrancyGuard._end()
     return (flowId=flowId)
 end
@@ -586,7 +590,11 @@ func addNFTMaturityStream{
         target_amount: Uint256, 
         initial_amount: Uint256, 
         start: felt,
-        maturity: felt
+        maturity: felt,
+        description: felt, 
+        oracle_address: felt, 
+        oracle_key: felt,
+        oracle_value: felt
     ) -> (
         flowId: Uint256
     ):
@@ -598,7 +606,7 @@ func addNFTMaturityStream{
         assert_not_equal(payer_address, contract_address)
     end 
 
-    let (flowId) = Flow.addMaturityStream(beneficiary_address, beneficiary_tokenId, target_amount, initial_amount, start, maturity, TRUE)
+    let (flowId) = Flow.addMaturityStream(beneficiary_address, beneficiary_tokenId, target_amount, initial_amount, start, maturity, TRUE, description, oracle_address, oracle_key, oracle_value)
     ReentrancyGuard._end()
     return (flowId=flowId)
 end
@@ -780,12 +788,12 @@ func pauseTokenId{
         Flow.withdraw(beneficiary_address=stream.beneficiary, beneficiary_tokenId=stream.tokenId, is_nft=stream.is_nft, _pause=FALSE)
         let (stream)        = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
     
-        let edited_stream   = MaturityStreamStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=block_timestamp, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=paused, streamId=stream.streamId)
+        let edited_stream   = MaturityStreamStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=block_timestamp, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=paused, streamId=stream.streamId, meta=stream.meta)
         FLOW_in.write(idStruct.beneficiary, idStruct.tokenId, idStruct.idx, edited_stream)
     else:
         let (stream)        = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
         
-        let edited_stream   = MaturityStreamStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=block_timestamp, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=paused, streamId=stream.streamId)
+        let edited_stream   = MaturityStreamStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=block_timestamp, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=paused, streamId=stream.streamId, meta=stream.meta)
         FLOW_in.write(idStruct.beneficiary, idStruct.tokenId, idStruct.idx, edited_stream)
     end
     
@@ -825,7 +833,7 @@ func transferTokenId{
         assert stream.payer = addrss
     end
 
-    let edited_stream = MaturityStreamStructure(payer=addressTo, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused, streamId=stream.streamId)
+    let edited_stream = MaturityStreamStructure(payer=addressTo, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused, streamId=stream.streamId, meta=stream.meta)
     FLOW_in.write(idStruct.beneficiary, idStruct.tokenId, idStruct.idx, edited_stream)
     
     ReentrancyGuard._end()
