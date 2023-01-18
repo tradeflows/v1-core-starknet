@@ -15,7 +15,7 @@
 
 @contract_interface
 namespace ItxOracle:
-    func getValue(key: felt) -> (value: felt):
+    func getValue(owner: felt, key: felt) -> (value: felt):
     end
 end
 

@@ -45,10 +45,11 @@ from openzeppelin.access.ownable.library import Ownable
 from tradeflows.interfaces.ItxAsset import ItxAsset
 from tradeflows.interfaces.ItxOracle import ItxOracle
 
-# Meta data
+# Meta Data
 struct Meta:
     member description      : felt
     member oracle_address   : felt
+    member oracle_owner     : felt
     member oracle_key       : felt
     member oracle_value     : felt
 end
@@ -270,6 +271,7 @@ namespace Flow:
             is_nft: felt,
             description: felt,
             oracle_address: felt,
+            oracle_owner: felt,
             oracle_key: felt,
             oracle_value: felt
         ) -> (
@@ -318,7 +320,7 @@ namespace Flow:
         let (next_streamId)     = SafeUint256.add(streamId, Uint256(1,0))
         id_counter.write(next_streamId)
         
-        let new_stream          = MaturityStreamStructure(payer=payer_address, beneficiary=beneficiary_address, tokenId=beneficiary_tokenId, target_amount=target_amount, initial_amount=initial_amount, locked_amount=initial_amount, total_withdraw=uint256_0, last_withdraw=uint256_0, start_time=start, last_reset_time=start, maturity_time=maturity, is_nft=is_nft, is_paused=FALSE, streamId=streamId, meta=Meta(description, oracle_address, oracle_key, oracle_value))
+        let new_stream          = MaturityStreamStructure(payer=payer_address, beneficiary=beneficiary_address, tokenId=beneficiary_tokenId, target_amount=target_amount, initial_amount=initial_amount, locked_amount=initial_amount, total_withdraw=uint256_0, last_withdraw=uint256_0, start_time=start, last_reset_time=start, maturity_time=maturity, is_nft=is_nft, is_paused=FALSE, streamId=streamId, meta=Meta(description, oracle_address, oracle_owner, oracle_key, oracle_value))
 
         let (count)             = FLOW_in_count.read(beneficiary=beneficiary_address, tokenId=beneficiary_tokenId)
 
@@ -540,41 +542,24 @@ namespace Flow:
             return (available_amount=Uint256(0,0), locked_amount=stream.locked_amount)
         end
 
+        let (oracle_address_flag)       = is_nn(stream.meta.oracle_address)
+        let (oracle_owner_flag)         = is_nn(stream.meta.oracle_owner)
+        if (oracle_address_flag * oracle_owner_flag) == TRUE:
+            let (value)                 = ItxOracle.getValue(contract_address=stream.meta.oracle_address, owner=stream.meta.oracle_owner, key=stream.meta.oracle_key)
+            if value == stream.meta.oracle_value:
+                return (available_amount= stream.locked_amount, locked_amount=Uint256(0,0))
+            else:
+                return (available_amount=Uint256(0,0), locked_amount=stream.locked_amount)
+            end
+        end
+
         let (maturity_le_block)         = is_le(stream.maturity_time, block_timestamp)
         if maturity_le_block == TRUE:
             return (available_amount= stream.locked_amount, locked_amount=Uint256(0,0))
         end
 
         if stream.maturity_time == stream.start_time:
-            return (available_amount=Uint256(0,0), locked_amount=stream.locked_amount)
-        end
-
-        let (oracle_address_flag)       = is_nn(stream.meta.oracle_address)
-        if oracle_address_flag == TRUE:
-            let (value)                 = ItxOracle.getValue(contract_address=stream.meta.oracle_address, key=stream.meta.oracle_key)
-            if value == stream.meta.oracle_value:
-                let time_elapsed                = block_timestamp - stream.last_reset_time 
-                let time_total                  = stream.maturity_time - stream.last_reset_time
-
-                let time_elapsed_uint256        = Uint256(low=time_elapsed, high=0)
-                let time_total_uint256          = Uint256(low=time_total, high=0)
-                
-                let (target_sub_total)          = SafeUint256.sub_le(stream.target_amount, stream.total_withdraw)
-                let (amount_time_elapsed, _)    = SafeUint256.div_rem(target_sub_total, time_total_uint256)
-                let (payout)                    = SafeUint256.mul(amount_time_elapsed, time_elapsed_uint256)
-
-                let (error)                     = uint256_le(stream.locked_amount, payout)
-                if error == TRUE:
-                    return (available_amount=stream.locked_amount, locked_amount=Uint256(0,0))
-                end    
-
-                let (locked)                    = SafeUint256.sub_le(stream.locked_amount, payout)
-                
-                return (available_amount=payout, locked_amount=locked)
-            else:
-                return (available_amount=Uint256(0,0), locked_amount=stream.locked_amount)
-            end
-            
+            return (available_amount=Uint256(0,0), locked_amount=stream.locked_amount)            
         else:
 
             let time_elapsed                = block_timestamp - stream.last_reset_time 
@@ -634,11 +619,6 @@ namespace Flow:
             return (available_amount= inner_available_amount, locked_amount=locked_amount)
         end
 
-        let (start_le_block)            = is_le(block_timestamp-1, stream.start_time)
-        if start_le_block == TRUE:
-            let (locked_amount)         = SafeUint256.add(stream.locked_amount, inner_locked_amount)
-            return (available_amount= inner_available_amount, locked_amount=locked_amount)
-        end
         
         let (payout, locked)            = calc_stream(stream=stream, block_timestamp=block_timestamp)
 

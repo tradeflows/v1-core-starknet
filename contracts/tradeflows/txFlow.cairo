@@ -558,6 +558,7 @@ func addMaturityStream{
         maturity: felt,
         description: felt, 
         oracle_address: felt, 
+        oracle_owner: felt, 
         oracle_key: felt,
         oracle_value: felt
     ) -> (
@@ -573,7 +574,7 @@ func addMaturityStream{
         assert_not_equal(payer_address, contract_address)
     end 
 
-    let (flowId)    = Flow.addMaturityStream(beneficiary_address, beneficiary_tokenId, target_amount, initial_amount, start, maturity, FALSE, description, oracle_address, oracle_key, oracle_value)
+    let (flowId)    = Flow.addMaturityStream(beneficiary_address, beneficiary_tokenId, target_amount, initial_amount, start, maturity, FALSE, description, oracle_address, oracle_owner, oracle_key, oracle_value)
     ReentrancyGuard._end()
     return (flowId=flowId)
 end
@@ -593,6 +594,7 @@ func addNFTMaturityStream{
         maturity: felt,
         description: felt, 
         oracle_address: felt, 
+        oracle_owner: felt, 
         oracle_key: felt,
         oracle_value: felt
     ) -> (
@@ -606,7 +608,7 @@ func addNFTMaturityStream{
         assert_not_equal(payer_address, contract_address)
     end 
 
-    let (flowId) = Flow.addMaturityStream(beneficiary_address, beneficiary_tokenId, target_amount, initial_amount, start, maturity, TRUE, description, oracle_address, oracle_key, oracle_value)
+    let (flowId) = Flow.addMaturityStream(beneficiary_address, beneficiary_tokenId, target_amount, initial_amount, start, maturity, TRUE, description, oracle_address, oracle_owner, oracle_key, oracle_value)
     ReentrancyGuard._end()
     return (flowId=flowId)
 end
