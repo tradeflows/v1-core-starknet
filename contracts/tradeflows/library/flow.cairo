@@ -52,6 +52,7 @@ struct Meta:
     member oracle_owner     : felt
     member oracle_key       : felt
     member oracle_value     : felt
+    member creation_time    : felt
 end
 
 # Payment 
@@ -92,7 +93,7 @@ end
 
 # Event that a maturity stream has been added
 @event
-func add_payment_called(streamId: Uint256, flow_id: felt, payer: felt, target_amount: Uint256, initial_amount: Uint256, count: felt, start_time: felt, last_reset_time: felt, maturity_time: felt):
+func add_payment_called(streamId: Uint256, flow_id: felt, payer: felt, target_amount: Uint256, initial_amount: Uint256, count: felt, start_time: felt, last_reset_time: felt, maturity_time: felt, creation_time: felt):
 end
 
 # Storage of the counter of the number of streams to be payed TO a given user.
@@ -320,7 +321,7 @@ namespace Flow:
         let (next_streamId)     = SafeUint256.add(streamId, Uint256(1,0))
         id_counter.write(next_streamId)
         
-        let new_stream          = PaymentStructure(payer=payer_address, beneficiary=beneficiary_address, tokenId=beneficiary_tokenId, target_amount=target_amount, initial_amount=initial_amount, locked_amount=initial_amount, total_withdraw=uint256_0, last_withdraw=uint256_0, start_time=start, last_reset_time=start, maturity_time=maturity, is_nft=is_nft, is_paused=FALSE, streamId=streamId, meta=Meta(description, oracle_address, oracle_owner, oracle_key, oracle_value))
+        let new_stream          = PaymentStructure(payer=payer_address, beneficiary=beneficiary_address, tokenId=beneficiary_tokenId, target_amount=target_amount, initial_amount=initial_amount, locked_amount=initial_amount, total_withdraw=uint256_0, last_withdraw=uint256_0, start_time=start, last_reset_time=start, maturity_time=maturity, is_nft=is_nft, is_paused=FALSE, streamId=streamId, meta=Meta(description=description, oracle_address=oracle_address, oracle_owner=oracle_owner, oracle_key=oracle_key, oracle_value=oracle_value, creation_time=block_timestamp))
 
         let (count)             = FLOW_in_count.read(beneficiary=beneficiary_address, tokenId=beneficiary_tokenId)
 
@@ -350,7 +351,7 @@ namespace Flow:
         
         FLOW_id_streams.write(streamId, PaymentIDStructure(beneficiary_address, beneficiary_tokenId, count))
 
-        add_payment_called.emit(streamId=streamId, flow_id= count, payer=payer_address, target_amount=target_amount, initial_amount=initial_amount, count=new_count, start_time=start, last_reset_time=start, maturity_time=maturity)
+        add_payment_called.emit(streamId=streamId, flow_id= count, payer=payer_address, target_amount=target_amount, initial_amount=initial_amount, count=new_count, start_time=start, last_reset_time=start, maturity_time=maturity, creation_time=block_timestamp)
         ERC20.transfer(contract_address, initial_amount)
 
 
@@ -537,11 +538,7 @@ namespace Flow:
             locked_amount: Uint256
         ):
         alloc_locals
-
-        if stream.is_paused == TRUE:
-            return (available_amount=Uint256(0,0), locked_amount=stream.locked_amount)
-        end
-
+       
         let (oracle_address_flag)       = is_nn(stream.meta.oracle_address)
         let (oracle_owner_flag)         = is_nn(stream.meta.oracle_owner)
         if (oracle_address_flag * oracle_owner_flag) == TRUE:
@@ -551,6 +548,10 @@ namespace Flow:
             else:
                 return (available_amount=Uint256(0,0), locked_amount=stream.locked_amount)
             end
+        end
+
+        if stream.is_paused == TRUE:
+            return (available_amount=Uint256(0,0), locked_amount=stream.locked_amount)
         end
 
         let (maturity_le_block)         = is_le(stream.maturity_time, block_timestamp)
@@ -841,8 +842,8 @@ namespace Flow:
                 let (_available_amount, _)           = _withdraw_aggregated_amount(beneficiary_address, beneficiary_tokenId, block_timestamp, count-1, _pause)
                 
                 withdrawRecursive(beneficiary_address, beneficiary_tokenId, available_amount)
-                withdraw_total_called.emit(payer=beneficiary_address, amount=available_amount, locked_amount=locked_amount, block_time=block_timestamp)
 
+                withdraw_total_called.emit(payer=beneficiary_address, amount=available_amount, locked_amount=locked_amount, block_time=block_timestamp)
                 return (amount=available_amount, locked_amount=locked_amount)
 
             else:
@@ -853,13 +854,10 @@ namespace Flow:
                 ERC20.transfer_from(contract_address, beneficiary_address, available_amount)
 
                 withdraw_total_called.emit(payer=beneficiary_address, amount=available_amount, locked_amount=locked_amount, block_time=block_timestamp)
-
                 return (amount=available_amount, locked_amount=locked_amount)
                 
             end
-        else:
-            withdraw_total_called.emit(payer=beneficiary_address, amount=available_amount, locked_amount=locked_amount, block_time=block_timestamp)
-
+        else:            
             return (amount=available_amount, locked_amount=locked_amount)
 
         end

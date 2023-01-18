@@ -59,7 +59,12 @@ from tradeflows.interfaces.ItxDharma import ItxDharma
 
 # Event an asset has been initiated
 @event
-func init_called(tokenId: Uint256, owner: felt, counterpart: felt):
+func init_called(tokenId: Uint256, owner: felt, counterpart: felt, block_time: felt):
+end
+
+# Event an asset has been agreed
+@event
+func agree_called(tokenId: Uint256, owner: felt, counterpart: felt, block_time: felt):
 end
 
 # Storage of the state of the agreement (agreed = 1 / not agreed = 0)
@@ -80,6 +85,11 @@ end
 # Storage of the timestamp of when the agreement was agreed
 @storage_var
 func agreements_timestamp(tokenId: Uint256) -> (timestamp: felt):
+end
+
+# Storage of the timestamp of when the agreement was created
+@storage_var
+func agreements_creation(tokenId: Uint256) -> (timestamp: felt):
 end
 
 # Storage of the number of NFTs minted which is used as a counter
@@ -186,8 +196,11 @@ namespace Asset:
         let (next_tokenId)          = SafeUint256.add(tokenId, Uint256(1,0))
         id_counter.write(next_tokenId)
 
+        let (block_timestamp)       = get_block_timestamp()
+
         agreements_provider.write(tokenId, caller_address)
         agreements_counterpart.write(tokenId, counterpart)
+        agreements_creation.write(tokenId, block_timestamp)
 
         let (t_count)               = ASSET_asset_count.read(counterpart)
         
@@ -213,7 +226,7 @@ namespace Asset:
             ASSET_base_weight.write(tokenId, _wgts)
         end
 
-        init_called.emit(tokenId, caller_address, counterpart)
+        init_called.emit(tokenId, caller_address, counterpart, block_timestamp)
         
         return (tokenId=tokenId)
     end
@@ -269,6 +282,9 @@ namespace Asset:
 
         agreements_state.write(tokenId, TRUE)
         agreements_timestamp.write(tokenId, block_timestamp)
+
+        let (owner)             = agreements_provider.read(tokenId)
+        agree_called.emit(tokenId, owner, counterpart, block_timestamp)
         
         return ()
     end
