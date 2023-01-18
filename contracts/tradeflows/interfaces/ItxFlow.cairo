@@ -32,7 +32,7 @@ namespace ItxFlow:
     func transferTokenId(addrss: felt, tokenId: Uint256, addressTo: felt) -> ():
     end
 
-    func withdrawAmountNFT(beneficiary_address: felt, beneficiary_tokenId: Uint256) -> (available_amount: Uint256, locked_amount: Uint256, block_timestamp: felt):
+    func withdrawAmount(beneficiary_address: felt, beneficiary_tokenId: Uint256) -> (available_amount: Uint256, locked_amount: Uint256, block_timestamp: felt):
     end
 end
 

@@ -63,8 +63,8 @@ The first steps are creating a new asset:
 4. Seller communicates the tokenID to the Buyer.
 5. Buyer agrees to the asset (_txAsset.agree_) given the tokenID.
 6. Buyer and Seller can now start to rate each other (_txAsset.rate_) given the tokenId.
-7. Buyer starts adding programmed Flow token cashflows to the asset (_txFlow.addNFTMaturityStream_) given the tokenId.
-8. Service provider is now able to withdraw Flow tokens from the NFT Asset (_txFlow.withdrawAmountNFT_) that are streamed to them as time passes.
+7. Buyer starts adding programmed Flow token cashflows to the asset (_txFlow.addPayment_) given the tokenId.
+8. Service provider is now able to withdraw Flow tokens from the NFT Asset (_txFlow.withdrawAmount_) that are streamed to them as time passes.
 9. Both Service providers and Buyers are able to withdraw Flow tokens (_txFlow.withdrawBase_) for the base token (USDC).
 
 # Contracts

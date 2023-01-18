@@ -24,7 +24,7 @@ async function main() {
     const datao = await owner.call(txFlowContract, "balanceOf", { account: owner.starknetContract.address })
     const data0 = await owner.call(txFlowContract, "balanceOf", { account: account1.starknetContract.address })
     const data1 = await owner.call(txFlowContract, "balanceOf", { account: account1.starknetContract.address })
-    const datan = await owner.call(txFlowContract, "balanceOfNFT", { account: txAssetContract.address, tokenId: tokenId})
+    const datan = await owner.call(txFlowContract, "balanceOfTokenId", { account: txAssetContract.address, tokenId: tokenId})
     const datac = await owner.call(txFlowContract, "balanceOf", { account: txFlowContract.address })
     const datad = await owner.call(txFlowContract, "balanceOf", { account: daoContract.address })
 

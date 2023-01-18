@@ -83,7 +83,7 @@ func balanceOf{
         balance : Uint256
 ):
     let (base_address) = OUTFLOW_baseFlow.read()
-    let (available_amount: Uint256, locked_amount: Uint256, block_timestamp: felt) = ItxFlow.withdrawAmountNFT(contract_address=base_address, beneficiary_address=account, beneficiary_tokenId=id)
+    let (available_amount: Uint256, locked_amount: Uint256, block_timestamp: felt) = ItxFlow.withdrawAmount(contract_address=base_address, beneficiary_address=account, beneficiary_tokenId=id)
     # let (locked_amount: Uint256, block_timestamp: felt) = ItxFlow.lockedTokenId(contract_address=base_address, beneficiary_address=account, tokenId=id, idx=0)
     return (locked_amount)
 end
