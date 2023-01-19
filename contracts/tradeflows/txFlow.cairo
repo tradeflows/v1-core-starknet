@@ -24,7 +24,7 @@ from openzeppelin.token.erc20.interfaces.IERC20 import IERC20
 from openzeppelin.security.safemath.library import SafeUint256
 from openzeppelin.access.ownable.library import Ownable
 
-from tradeflows.library.flow import FLOW_in, FLOW_in_count, FLOW_base_token, FLOW_id_streams, FLOW_OutFlow_address, PaymentStructure, Meta, Flow, pause_called
+from tradeflows.library.flow import FLOW_in, FLOW_in_count, FLOW_base_token, FLOW_id_streams, FLOW_OutFlow_address, PaymentStructure, Meta, Flow, pause_called, increase_called, decrease_called
 from tradeflows.library.asset import Asset
 
 
@@ -636,28 +636,31 @@ func increaseTokenId{
         tokenId: Uint256,
         amount : Uint256
     ) -> ():
+    alloc_locals
     ReentrancyGuard._start()
-
-    let (outFlow)  = FLOW_OutFlow_address.read()
-    let (caller)   = get_caller_address()
+    
+    let (outFlow)           = FLOW_OutFlow_address.read()
+    let (caller)            = get_caller_address()
+    let (block_timestamp)   = get_block_timestamp()
 
     with_attr error_message("incorrect caller"):
         assert outFlow = caller
     end
 
-    let (idStruct) = FLOW_id_streams.read(tokenId)
+    let (idStruct)          = FLOW_id_streams.read(tokenId)
     
     with_attr error_message("tokenId not found"):
         assert_not_zero(idStruct.beneficiary)
     end
 
-    let (stream)   = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
+    let (stream)            = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
 
     with_attr error_message("only owner can call this function"):
         assert stream.payer = addrss
     end
 
     Flow.increaseAmount(idStruct.beneficiary, idStruct.tokenId, idStruct.idx, amount)
+    increase_called.emit(beneficiary=stream.beneficiary, tokenId=stream.tokenId, paymentId=stream.paymentId, amount=amount, block_time=block_timestamp)
     ReentrancyGuard._end()
     return ()
 end
@@ -673,28 +676,32 @@ func decreaseTokenId{
         tokenId: Uint256,
         amount : Uint256
     ) -> ():
+    alloc_locals
     ReentrancyGuard._start()
 
-    let (outFlow)  = FLOW_OutFlow_address.read()
-    let (caller)   = get_caller_address()
+    let (outFlow)           = FLOW_OutFlow_address.read()
+    let (caller)            = get_caller_address()
+    let (block_timestamp)   = get_block_timestamp()
 
     with_attr error_message("incorrect caller"):
         assert outFlow = caller
     end
 
-    let (idStruct) = FLOW_id_streams.read(tokenId)
+    let (idStruct)          = FLOW_id_streams.read(tokenId)
 
     with_attr error_message("tokenId not found"):
         assert_not_zero(idStruct.beneficiary)
     end
 
-    let (stream)   = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
+    let (stream)            = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
 
     with_attr error_message("only owner can call this function"):
         assert stream.payer = addrss
     end
 
     Flow.decreaseAmount(idStruct.beneficiary, idStruct.tokenId, idStruct.idx, amount)
+
+    decrease_called.emit(beneficiary=stream.beneficiary, tokenId=stream.tokenId, paymentId=stream.paymentId, amount=amount, block_time=block_timestamp)
     ReentrancyGuard._end()
     return ()
 end
@@ -735,8 +742,6 @@ func pauseTokenId{
 
     let (block_timestamp)   = get_block_timestamp()
 
-    pause_called.emit(beneficiary=stream.beneficiary, tokenId=stream.tokenId, paymentId=stream.paymentId, flag=paused, block_time=block_timestamp)
-
     if stream.is_paused == FALSE:
         Flow.withdraw(beneficiary_address=stream.beneficiary, beneficiary_tokenId=stream.tokenId, is_nft=stream.is_nft, _pause=FALSE)
         let (stream)        = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
@@ -749,6 +754,8 @@ func pauseTokenId{
         let edited_stream   = PaymentStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=block_timestamp, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=paused, paymentId=stream.paymentId, meta=stream.meta)
         FLOW_in.write(idStruct.beneficiary, idStruct.tokenId, idStruct.idx, edited_stream)
     end
+
+    pause_called.emit(beneficiary=stream.beneficiary, tokenId=stream.tokenId, paymentId=stream.paymentId, flag=paused, block_time=block_timestamp)
     
     ReentrancyGuard._end()
     return ()

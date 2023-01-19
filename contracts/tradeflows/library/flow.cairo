@@ -101,6 +101,27 @@ end
 func pause_called(beneficiary: felt, tokenId: Uint256, paymentId: Uint256, flag: felt, block_time: felt):
 end
 
+# Event that a maturity stream has been increase
+@event
+func increase_called(beneficiary: felt, tokenId: Uint256, paymentId: Uint256, amount: Uint256, block_time: felt):
+end
+
+# Event deposit base
+@event
+func deposit_base_called(beneficiary: felt, amount: Uint256, block_time: felt):
+end
+
+# Event withdraw base
+@event
+func withdraw_base_called(beneficiary: felt, amount: Uint256, block_time: felt):
+end
+
+
+# Event that a maturity stream has been decrease
+@event
+func decrease_called(beneficiary: felt, tokenId: Uint256, paymentId: Uint256, amount: Uint256, block_time: felt):
+end
+
 # Storage of the counter of the number of streams to be payed TO a given user.
 @storage_var
 func FLOW_in_count(beneficiary: felt, tokenId: Uint256) -> (count: felt):
@@ -181,6 +202,7 @@ namespace Flow:
         let (payer_address)     = get_caller_address()
         let (contract_address)  = get_contract_address()
         let (allowance)         = IERC20.allowance(contract_address=base_address, owner=payer_address, spender=contract_address)
+        let (block_timestamp)   = get_block_timestamp()
         
         with_attr error_message("amount must be less than or equal to allowance"):
             let (ok) = uint256_le(amount,allowance)
@@ -189,7 +211,7 @@ namespace Flow:
 
         IERC20.transferFrom(contract_address=base_address, sender=payer_address, recipient=contract_address, amount=amount)
         ERC20._mint(payer_address, amount)
-        
+        deposit_base_called.emit(beneficiary=payer_address, amount=amount, block_time=block_timestamp)
         return ()
     end 
 
@@ -206,6 +228,7 @@ namespace Flow:
         let (payer_address)     = get_caller_address()
         let (contract_address)  = get_contract_address()
         let (allowance)         = ERC20.balance_of(payer_address)
+        let (block_timestamp)   = get_block_timestamp()
 
         let (contract_balance)  = IERC20.balanceOf(contract_address=base_address, account=contract_address)
 
@@ -242,6 +265,7 @@ namespace Flow:
 
         ERC20._burn(payer_address, amount)
         IERC20.transfer(contract_address=base_address, recipient=payer_address, amount=amount)
+        withdraw_base_called.emit(beneficiary=payer_address, amount=amount, block_time=block_timestamp)
         return ()
     end
 
