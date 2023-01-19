@@ -70,7 +70,7 @@ struct PaymentStructure:
     member maturity_time    : felt
     member is_nft           : felt
     member is_paused        : felt
-    member streamId         : Uint256
+    member paymentId         : Uint256
     member meta             : Meta
 end
 
@@ -93,7 +93,12 @@ end
 
 # Event that a maturity stream has been added
 @event
-func add_payment_called(streamId: Uint256, flow_id: felt, payer: felt, target_amount: Uint256, initial_amount: Uint256, count: felt, start_time: felt, last_reset_time: felt, maturity_time: felt, creation_time: felt):
+func add_payment_called(beneficiary: felt, tokenId: Uint256, paymentId: Uint256, idx: felt, payer: felt, target_amount: Uint256, initial_amount: Uint256, count: felt, start_time: felt, last_reset_time: felt, maturity_time: felt, creation_time: felt, description: felt, oracle_address: felt, oracle_owner: felt, oracle_key: felt, oracle_value : felt):
+end
+
+# Event that a maturity stream has been paused
+@event
+func pause_called(beneficiary: felt, tokenId: Uint256, paymentId: Uint256, flag: felt, block_time: felt):
 end
 
 # Storage of the counter of the number of streams to be payed TO a given user.
@@ -276,7 +281,7 @@ namespace Flow:
             oracle_key: felt,
             oracle_value: felt
         ) -> (
-            streamId : Uint256
+            paymentId : Uint256
         ):
 
         alloc_locals
@@ -317,11 +322,11 @@ namespace Flow:
             assert ok = TRUE
         end
 
-        let (streamId : Uint256)= id_counter.read()
-        let (next_streamId)     = SafeUint256.add(streamId, Uint256(1,0))
-        id_counter.write(next_streamId)
+        let (paymentId : Uint256)= id_counter.read()
+        let (next_paymentId)     = SafeUint256.add(paymentId, Uint256(1,0))
+        id_counter.write(next_paymentId)
         
-        let new_stream          = PaymentStructure(payer=payer_address, beneficiary=beneficiary_address, tokenId=beneficiary_tokenId, target_amount=target_amount, initial_amount=initial_amount, locked_amount=initial_amount, total_withdraw=uint256_0, last_withdraw=uint256_0, start_time=start, last_reset_time=start, maturity_time=maturity, is_nft=is_nft, is_paused=FALSE, streamId=streamId, meta=Meta(description=description, oracle_address=oracle_address, oracle_owner=oracle_owner, oracle_key=oracle_key, oracle_value=oracle_value, creation_time=block_timestamp))
+        let new_stream          = PaymentStructure(payer=payer_address, beneficiary=beneficiary_address, tokenId=beneficiary_tokenId, target_amount=target_amount, initial_amount=initial_amount, locked_amount=initial_amount, total_withdraw=uint256_0, last_withdraw=uint256_0, start_time=start, last_reset_time=start, maturity_time=maturity, is_nft=is_nft, is_paused=FALSE, paymentId=paymentId, meta=Meta(description=description, oracle_address=oracle_address, oracle_owner=oracle_owner, oracle_key=oracle_key, oracle_value=oracle_value, creation_time=block_timestamp))
 
         let (count)             = FLOW_in_count.read(beneficiary=beneficiary_address, tokenId=beneficiary_tokenId)
 
@@ -349,13 +354,13 @@ namespace Flow:
         let new_custody_count_to= custody_count_to + 1
         FLOW_out_count.write(contract_address, new_custody_count_to)
         
-        FLOW_id_streams.write(streamId, PaymentIDStructure(beneficiary_address, beneficiary_tokenId, count))
+        FLOW_id_streams.write(paymentId, PaymentIDStructure(beneficiary_address, beneficiary_tokenId, count))
 
-        add_payment_called.emit(streamId=streamId, flow_id= count, payer=payer_address, target_amount=target_amount, initial_amount=initial_amount, count=new_count, start_time=start, last_reset_time=start, maturity_time=maturity, creation_time=block_timestamp)
+        add_payment_called.emit(beneficiary=beneficiary_address, tokenId=beneficiary_tokenId, paymentId=paymentId, idx=count, payer=payer_address, target_amount=target_amount, initial_amount=initial_amount, count=new_count, start_time=start, last_reset_time=start, maturity_time=maturity, creation_time=block_timestamp, description=description, oracle_address=oracle_address, oracle_owner=oracle_owner, oracle_key=oracle_key, oracle_value=oracle_value)
         ERC20.transfer(contract_address, initial_amount)
 
 
-        return (streamId=streamId)
+        return (paymentId=paymentId)
     end
 
     # Increase locked amount for an existing payment
@@ -398,7 +403,7 @@ namespace Flow:
 
         ERC20.transfer(contract_address, amount)
 
-        let edited_stream       = PaymentStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=new_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused, streamId=stream.streamId, meta=stream.meta)
+        let edited_stream       = PaymentStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=new_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused, paymentId=stream.paymentId, meta=stream.meta)
         FLOW_in.write(beneficiary_address, beneficiary_tokenId, id, edited_stream)
         
         return (caller_address=payer_address)
@@ -445,7 +450,7 @@ namespace Flow:
         
         ERC20.transfer_from(contract_address, stream.payer, amount)        
 
-        let edited_stream       = PaymentStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=new_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.locked_amount, start_time=stream.start_time, last_reset_time=block_timestamp, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused, streamId=stream.streamId, meta=stream.meta)
+        let edited_stream       = PaymentStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=new_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.locked_amount, start_time=stream.start_time, last_reset_time=block_timestamp, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused, paymentId=stream.paymentId, meta=stream.meta)
         FLOW_in.write(beneficiary_address, beneficiary_tokenId, id, edited_stream)
 
         return (caller_address=payer_address)
@@ -498,7 +503,7 @@ namespace Flow:
             beneficiary_tokenId: Uint256,
             idx: felt
         ) -> (
-            streamId: Uint256, 
+            paymentId: Uint256, 
             payer: felt, 
             target: Uint256, 
             initial: Uint256,
@@ -522,7 +527,7 @@ namespace Flow:
         let (stream)                            = FLOW_in.read(beneficiary=beneficiary_address, tokenId=beneficiary_tokenId, idx=idx)
         let (available_amount, locked_amount)   = calc_payment(stream=stream, block_timestamp=block_timestamp)
 
-        return (streamId=stream.streamId, payer=stream.payer, target=stream.target_amount, initial=stream.initial_amount, amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_paused=stream.is_paused, available_amount=available_amount, locked_amount=locked_amount)
+        return (paymentId=stream.paymentId, payer=stream.payer, target=stream.target_amount, initial=stream.initial_amount, amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_paused=stream.is_paused, available_amount=available_amount, locked_amount=locked_amount)
     end
 
     # helper: calculate the amount available and locked
@@ -539,10 +544,10 @@ namespace Flow:
         ):
         alloc_locals
        
-        let (oracle_address_flag)       = is_nn(stream.meta.oracle_address)
-        let (oracle_owner_flag)         = is_nn(stream.meta.oracle_owner)
+        let (oracle_address_flag)           = is_nn(stream.meta.oracle_address)
+        let (oracle_owner_flag)             = is_nn(stream.meta.oracle_owner)
         if (oracle_address_flag * oracle_owner_flag) == TRUE:
-            let (value)                 = ItxOracle.getValue(contract_address=stream.meta.oracle_address, owner=stream.meta.oracle_owner, key=stream.meta.oracle_key)
+            let (value)                     = ItxOracle.getValue(contract_address=stream.meta.oracle_address, owner=stream.meta.oracle_owner, key=stream.meta.oracle_key)
             if value == stream.meta.oracle_value:
                 return (available_amount= stream.locked_amount, locked_amount=Uint256(0,0))
             else:
@@ -554,14 +559,20 @@ namespace Flow:
             return (available_amount=Uint256(0,0), locked_amount=stream.locked_amount)
         end
 
-        let (maturity_le_block)         = is_le(stream.maturity_time, block_timestamp)
+        let (maturity_le_block)             = is_le(stream.maturity_time, block_timestamp)
         if maturity_le_block == TRUE:
             return (available_amount= stream.locked_amount, locked_amount=Uint256(0,0))
         end
+        
 
         if stream.maturity_time == stream.start_time:
             return (available_amount=Uint256(0,0), locked_amount=stream.locked_amount)            
         else:
+
+            let (block_le_start)            = is_le(block_timestamp, stream.start_time)
+            if block_le_start == TRUE:
+                return (available_amount= Uint256(0,0), locked_amount=stream.locked_amount)
+            end
 
             let time_elapsed                = block_timestamp - stream.last_reset_time 
             let time_total                  = stream.maturity_time - stream.last_reset_time
@@ -752,57 +763,27 @@ namespace Flow:
             return (available_amount=uint256_0, locked_amount=uint256_0)
         end
 
-        let (stream)                                            = FLOW_in.read(beneficiary=beneficiary_address, tokenId=beneficiary_tokenId, idx=idx)
+        let (stream)                                        = FLOW_in.read(beneficiary=beneficiary_address, tokenId=beneficiary_tokenId, idx=idx)
         
         if _pause == TRUE:
             return (available_amount=uint256_0, locked_amount=uint256_0)
         end
-
-        let (is_stream_amount_0)                                = uint256_eq(stream.locked_amount, uint256_0)
-        if is_stream_amount_0 == TRUE:
-            return (available_amount=uint256_0, locked_amount=uint256_0)
-        else:        
             
-            let (inner_available_amount, inner_locked_amount)   = _withdraw_aggregated_amount(beneficiary_address=beneficiary_address, beneficiary_tokenId=beneficiary_tokenId, block_timestamp=block_timestamp, idx=idx-1, _pause=_pause)
+        let (inner_available_amount, inner_locked_amount)   = _withdraw_aggregated_amount(beneficiary_address=beneficiary_address, beneficiary_tokenId=beneficiary_tokenId, block_timestamp=block_timestamp, idx=idx-1, _pause=_pause)
 
-            let (maturity_le_block)                             = is_le(stream.maturity_time, block_timestamp)
-            if maturity_le_block == TRUE:
-                let remaining                                   = uint256_0
-                let (total_withdraw)                            = SafeUint256.add(stream.total_withdraw, stream.locked_amount)
-            
-                let edited_stream                               = PaymentStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=remaining, total_withdraw=total_withdraw, last_withdraw=stream.locked_amount, start_time=stream.start_time, last_reset_time=block_timestamp, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused, streamId=stream.streamId, meta=stream.meta)
-                FLOW_in.write(beneficiary_address, beneficiary_tokenId, idx, edited_stream)
+        
+        let (payout, locked)                                = calc_payment(stream=stream, block_timestamp=block_timestamp)
 
-                withdraw_called.emit(payer=beneficiary_address, amount=stream.locked_amount, locked_amount=uint256_0, total_withdraw= stream.total_withdraw, start_time=stream.start_time, maturity_time=stream.maturity_time, block_time=block_timestamp)
+        let (total_withdraw)                                = SafeUint256.add(stream.total_withdraw, payout)
 
-                let (available_amount)                          = SafeUint256.add(stream.locked_amount, inner_available_amount)
-                return (available_amount=available_amount, locked_amount=inner_locked_amount)
+        let edited_stream                                   = PaymentStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=locked, total_withdraw=total_withdraw, last_withdraw=payout, start_time=stream.start_time, last_reset_time=block_timestamp, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused, paymentId=stream.paymentId, stream.meta)
+        FLOW_in.write(beneficiary_address, beneficiary_tokenId, idx, edited_stream)
 
-            else:
-    
-                if stream.is_paused == TRUE:
-                    return (available_amount=inner_available_amount, locked_amount=inner_locked_amount)
-                end
+        let (available_amount)                              = SafeUint256.add(payout, inner_available_amount)
+        let (locked_amount)                                 = SafeUint256.add(locked, inner_locked_amount)
 
-                let (start_le_block)                            = is_le(block_timestamp-1, stream.start_time)                
-                if start_le_block == TRUE:
-                    return (available_amount=inner_available_amount, locked_amount=inner_locked_amount)
-                else:
-                    let (payout, locked)                        = calc_payment(stream=stream, block_timestamp=block_timestamp)
-
-                    let (total_withdraw)                        = SafeUint256.add(stream.total_withdraw, payout)
-
-                    let edited_stream                           = PaymentStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=locked, total_withdraw=total_withdraw, last_withdraw=payout, start_time=stream.start_time, last_reset_time=block_timestamp, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused, streamId=stream.streamId, stream.meta)
-                    FLOW_in.write(beneficiary_address, beneficiary_tokenId, idx, edited_stream)
-
-                    let (available_amount)                      = SafeUint256.add(payout, inner_available_amount)
-                    let (locked_amount)                         = SafeUint256.add(locked, inner_locked_amount)
-            
-                    withdraw_called.emit(payer=beneficiary_address, amount=available_amount, locked_amount=locked_amount, total_withdraw=total_withdraw, start_time=stream.start_time, maturity_time=stream.maturity_time, block_time=block_timestamp)
-                    return (available_amount=available_amount, locked_amount=locked_amount)
-                end
-            end
-        end
+        withdraw_called.emit(payer=beneficiary_address, amount=available_amount, locked_amount=locked_amount, total_withdraw=total_withdraw, start_time=stream.start_time, maturity_time=stream.maturity_time, block_time=block_timestamp)
+        return (available_amount=available_amount, locked_amount=locked_amount)
     end
 
     # Withdrawn any available amount.

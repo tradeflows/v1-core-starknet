@@ -24,7 +24,7 @@ from openzeppelin.token.erc20.interfaces.IERC20 import IERC20
 from openzeppelin.security.safemath.library import SafeUint256
 from openzeppelin.access.ownable.library import Ownable
 
-from tradeflows.library.flow import FLOW_in, FLOW_in_count, FLOW_base_token, FLOW_id_streams, FLOW_OutFlow_address, PaymentStructure, Meta, Flow
+from tradeflows.library.flow import FLOW_in, FLOW_in_count, FLOW_base_token, FLOW_id_streams, FLOW_OutFlow_address, PaymentStructure, Meta, Flow, pause_called
 from tradeflows.library.asset import Asset
 
 
@@ -429,7 +429,7 @@ func getPayment{
         beneficiary_tokenId: Uint256,
         idx: felt
     ) -> (
-        streamId: Uint256, 
+        paymentId: Uint256, 
         from_address: felt, 
         target: Uint256, 
         initial: Uint256,
@@ -444,8 +444,8 @@ func getPayment{
         locked_amount: Uint256
     ):
 
-    let (streamId, from_address, target, initial, amount, total_withdraw, last_withdraw, start_time, last_reset_time, maturity_time, is_paused, available_amount, locked_amount) = Flow.getPayment(beneficiary_address, beneficiary_tokenId, idx)
-    return (streamId=streamId, from_address=from_address, target=target, initial=initial, amount=amount, total_withdraw=total_withdraw, last_withdraw=last_withdraw, start_time=start_time, last_reset_time=last_reset_time, maturity_time=maturity_time, is_paused=is_paused, available_amount=available_amount, locked_amount=locked_amount)
+    let (paymentId, from_address, target, initial, amount, total_withdraw, last_withdraw, start_time, last_reset_time, maturity_time, is_paused, available_amount, locked_amount) = Flow.getPayment(beneficiary_address, beneficiary_tokenId, idx)
+    return (paymentId=paymentId, from_address=from_address, target=target, initial=initial, amount=amount, total_withdraw=total_withdraw, last_withdraw=last_withdraw, start_time=start_time, last_reset_time=last_reset_time, maturity_time=maturity_time, is_paused=is_paused, available_amount=available_amount, locked_amount=locked_amount)
 end
 
 
@@ -506,38 +506,60 @@ func pausePayments{
     return (amount=amount, locked_amount=locked_amount)
 end
 
+# Payment Input Structure
+struct PaymentInput:
+    member beneficiary_address  : felt
+    member beneficiary_tokenId  : Uint256
+    member target_amount        : Uint256
+    member initial_amount       : Uint256
+    member start                : felt
+    member maturity             : felt
+    member description          : felt
+
+    member oracle_address       : felt
+    member oracle_owner         : felt
+    member oracle_key           : felt
+    member oracle_value         : felt
+    member creation_time        : felt
+end
+
 # Add a new payment stream
 @external
-func addPayment{
+func addPayments{
         syscall_ptr: felt*, 
         pedersen_ptr: HashBuiltin*, 
         range_check_ptr
     }(
-        beneficiary_address: felt, 
-        beneficiary_tokenId: Uint256, 
-        target_amount: Uint256, 
-        initial_amount: Uint256, 
-        start: felt,
-        maturity: felt,
-        description: felt, 
-        oracle_address: felt, 
-        oracle_owner: felt, 
-        oracle_key: felt,
-        oracle_value: felt
+        input_len: felt,
+        input: PaymentInput*
     ) -> (
         flowId: Uint256
     ):
     ReentrancyGuard._start()
-    let (payer_address)   = get_caller_address()
-    let (contract_address)= get_contract_address()
-    
-    with_attr error_message("Cannot add stream to custody contract"):
-        assert_not_equal(payer_address, contract_address)
-    end 
 
-    let (flowId) = Flow.addPayment(beneficiary_address, beneficiary_tokenId, target_amount, initial_amount, start, maturity, TRUE, description, oracle_address, oracle_owner, oracle_key, oracle_value)
+    _addPayment(input_len=input_len,input=input)
+    
     ReentrancyGuard._end()
-    return (flowId=flowId)
+    return (flowId=Uint256(0,0))
+end
+
+# Add a new payment stream
+func _addPayment{
+        syscall_ptr: felt*, 
+        pedersen_ptr: HashBuiltin*, 
+        range_check_ptr
+    }(
+        input_len: felt,
+        input: PaymentInput*
+    ) -> ():
+    if input_len == 0:
+        return ()
+    end
+    let p = [input]
+    Flow.addPayment(p.beneficiary_address, p.beneficiary_tokenId, p.target_amount, p.initial_amount, p.start, p.maturity, TRUE, p.description, p.oracle_address, p.oracle_owner, p.oracle_key, p.oracle_value)
+
+    _addPayment(input_len=input_len-1, input=input+1)
+    return ()
 end
 
 # Deposit base token
@@ -713,16 +735,18 @@ func pauseTokenId{
 
     let (block_timestamp)   = get_block_timestamp()
 
+    pause_called.emit(beneficiary=stream.beneficiary, tokenId=stream.tokenId, paymentId=stream.paymentId, flag=paused, block_time=block_timestamp)
+
     if stream.is_paused == FALSE:
         Flow.withdraw(beneficiary_address=stream.beneficiary, beneficiary_tokenId=stream.tokenId, is_nft=stream.is_nft, _pause=FALSE)
         let (stream)        = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
     
-        let edited_stream   = PaymentStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=block_timestamp, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=paused, streamId=stream.streamId, meta=stream.meta)
+        let edited_stream   = PaymentStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=block_timestamp, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=paused, paymentId=stream.paymentId, meta=stream.meta)
         FLOW_in.write(idStruct.beneficiary, idStruct.tokenId, idStruct.idx, edited_stream)
     else:
         let (stream)        = FLOW_in.read(idStruct.beneficiary, idStruct.tokenId, idStruct.idx)
         
-        let edited_stream   = PaymentStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=block_timestamp, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=paused, streamId=stream.streamId, meta=stream.meta)
+        let edited_stream   = PaymentStructure(payer=stream.payer, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=block_timestamp, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=paused, paymentId=stream.paymentId, meta=stream.meta)
         FLOW_in.write(idStruct.beneficiary, idStruct.tokenId, idStruct.idx, edited_stream)
     end
     
@@ -762,7 +786,7 @@ func transferTokenId{
         assert stream.payer = addrss
     end
 
-    let edited_stream = PaymentStructure(payer=addressTo, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused, streamId=stream.streamId, meta=stream.meta)
+    let edited_stream = PaymentStructure(payer=addressTo, beneficiary=stream.beneficiary, tokenId=stream.tokenId, target_amount=stream.target_amount, initial_amount=stream.initial_amount, locked_amount=stream.locked_amount, total_withdraw=stream.total_withdraw, last_withdraw=stream.last_withdraw, start_time=stream.start_time, last_reset_time=stream.last_reset_time, maturity_time=stream.maturity_time, is_nft=stream.is_nft, is_paused=stream.is_paused, paymentId=stream.paymentId, meta=stream.meta)
     FLOW_in.write(idStruct.beneficiary, idStruct.tokenId, idStruct.idx, edited_stream)
     
     ReentrancyGuard._end()
