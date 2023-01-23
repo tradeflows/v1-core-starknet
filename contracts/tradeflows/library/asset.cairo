@@ -956,7 +956,7 @@ namespace Asset:
 
         let (local sub_tokens_value : Uint256*) = alloc()
 
-        _reset_sub_tokens(tokenId, _sub_tokens_len, _sub_tokens)
+        _reset_sub_tokens(_sub_tokens_len, _sub_tokens)
         _set_sub_tokens(tokenId, 0, sub_tokens_value)
         _set_sub_types(tokenId, 0, &[0])
         ASSET_sub_tokens_len.write(tokenId, 0)
@@ -1021,7 +1021,6 @@ namespace Asset:
             pedersen_ptr : HashBuiltin*, 
             range_check_ptr
         }(
-            tokenId : Uint256, 
             sub_tokens_len : felt, 
             sub_tokens : Uint256*
         ):
@@ -1038,7 +1037,7 @@ namespace Asset:
         ERC721._approve(caller_address, [sub_tokens])
         ERC721.transfer_from(contract_address, caller_address, [sub_tokens])
 
-        _reset_sub_tokens(tokenId, sub_tokens_len - 1, sub_tokens + 1)
+        _reset_sub_tokens(sub_tokens_len - 1, sub_tokens + 1)
         return ()
     end
 
